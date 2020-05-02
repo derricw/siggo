@@ -2,12 +2,12 @@ package ui
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/derricw/siggo/model"
 	"github.com/gdamore/tcell"
 	"github.com/pgavlin/femto"
 	"github.com/rivo/tview"
+	log "github.com/sirupsen/logrus"
 )
 
 type ConvInfo map[*model.Contact]*model.Conversation
@@ -22,6 +22,9 @@ type ChatWindow struct {
 	contactsPanel     *ContactListPanel
 	conversationPanel *ConversationPanel
 }
+
+func (c *ChatWindow) ContactUp()   {}
+func (c *ChatWindow) ContactDown() {}
 
 func (c *ChatWindow) send(msg string) {
 	// send message to the current contact
@@ -47,6 +50,7 @@ type SendPanel struct {
 	//*tview.InputField
 	*femto.View
 	sendCallbacks []func(string)
+	KeyEvent      func(*tcell.EventKey) *tcell.EventKey
 }
 
 func (s *SendPanel) Send() {
@@ -71,6 +75,14 @@ func NewSendPanel() *SendPanel {
 	s.SetTitleAlign(0)
 	s.SetBorder(true)
 	s.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// first let anyone hooked in handle the event
+		if s.KeyEvent != nil {
+			e := s.KeyEvent(event)
+			if e == nil {
+				return nil
+			}
+		}
+		// then handle it ourselves
 		switch event.Key() {
 		case tcell.KeyEnter:
 			if event.Modifiers() == 4 {
@@ -78,8 +90,6 @@ func NewSendPanel() *SendPanel {
 				return nil
 			}
 			return event
-		case tcell.KeyCtrlS:
-			return nil
 		case tcell.KeyCtrlQ:
 			return nil
 		}
@@ -148,6 +158,30 @@ func NewChatWindow(siggo *model.Siggo) *ChatWindow {
 	w.conversationPanel = NewConversationPanel()
 	w.contactsPanel = NewContactListPanel()
 	w.sendPanel = NewSendPanel()
+	// Setup keys
+	// TODO: lets move this somewhere better so we can merge all of our keybinds
+	w.sendPanel.KeyEvent = func(event *tcell.EventKey) *tcell.EventKey {
+		log.Printf("Key Event: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyDown:
+			log.Printf("key Down...")
+			if event.Modifiers() == 4 {
+				w.ContactDown()
+				return nil
+			}
+			return event
+		case tcell.KeyUp:
+			log.Printf("key Up...")
+			if event.Modifiers() == 4 {
+				w.ContactUp()
+				return nil
+			}
+			return event
+		case tcell.KeyCtrlQ:
+			return nil
+		}
+		return event
+	}
 
 	// primitiv, row, col, rowSpan, colSpan, minGridHeight, maxGridHeight, focus)
 	// TODO: lets make some of the spans confiurable?

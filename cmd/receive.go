@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"io/ioutil"
-	"log"
 
 	"github.com/derricw/siggo/model"
 	"github.com/derricw/siggo/signal"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ var receiveCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalf("couldn't open mock data")
 			}
-			signalAPI = signal.NewMockSignal(b)
+			signalAPI = signal.NewMockSignal(User, b)
 		}
 
 		s := model.NewSiggo(signalAPI, cfg)

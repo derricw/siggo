@@ -5,9 +5,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os/exec"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type MessageCallback func(*Message) error
@@ -87,6 +88,19 @@ func (s *Signal) Receive() error {
 		}
 	}
 	return err
+}
+
+// ReceiveUntil receives contiuously until it receives a stop signal
+func (s *Signal) ReceiveUntil(done chan struct{}) {
+	go func() {
+		// better to select with timeout?
+		for len(done) == 0 {
+			err := s.Receive()
+			if err != nil {
+				log.Printf("receive failed: %s", err)
+			}
+		}
+	}()
 }
 
 // Send transmits a message to the specified number

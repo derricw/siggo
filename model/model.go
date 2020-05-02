@@ -2,9 +2,9 @@ package model
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/derricw/siggo/signal"
+	log "github.com/sirupsen/logrus"
 )
 
 var DeliveryStatus map[bool]string = map[bool]string{
@@ -82,6 +82,7 @@ func NewConversation(contact *Contact) *Conversation {
 type SignalAPI interface {
 	Send(string, string) error
 	Receive() error
+	ReceiveUntil(chan struct{})
 	OnReceived(signal.ReceivedCallback)
 	OnReceipt(signal.ReceiptCallback)
 }
@@ -90,6 +91,7 @@ type Siggo struct {
 	config        *Config
 	contacts      map[string]*Contact
 	conversations map[*Contact]*Conversation
+	contactOrder  []*Contact
 	signal        SignalAPI
 
 	NewInfo func(*Conversation)
@@ -133,6 +135,11 @@ func (s *Siggo) newContact(number string) *Contact {
 // Receive
 func (s *Siggo) Receive() error {
 	return s.signal.Receive()
+}
+
+// ReceiveUntil
+func (s *Siggo) ReceiveUntil(done chan struct{}) {
+	s.signal.ReceiveUntil(done)
 }
 
 func (s *Siggo) onSend(message *Message, conv *Conversation) {}
@@ -179,11 +186,6 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 
 func (s *Siggo) onReceipt(msg *signal.Message) error {
 	receiptMsg := msg.Envelope.ReceiptMessage
-	//fmt.Printf("RECEIPT Received:\n")
-	//fmt.Printf("  From: %s\n", msg.Envelope.Source)
-	//fmt.Printf("  Delivered: %t\n", receiptMsg.IsDelivery)
-	//fmt.Printf("  Read: %t\n", receiptMsg.IsRead)
-	//fmt.Printf("  Timestamps: %v\n", receiptMsg.Timestamps)
 	// if the message exists, edit it with new data
 	contactNumber := msg.Envelope.Source
 	// if we have a name for this contact, use it

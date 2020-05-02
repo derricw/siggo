@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"io/ioutil"
-	"log"
+	"os"
 
 	"github.com/rivo/tview"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/derricw/siggo/model"
@@ -21,6 +22,11 @@ var uiCmd = &cobra.Command{
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		outputFile, err := os.Create("/tmp/siggo.log")
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.SetOutput(outputFile)
 
 		cfg := &model.Config{
 			UserNumber: User,
@@ -32,15 +38,17 @@ var uiCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalf("couldn't open mock data")
 			}
-			signalAPI = signal.NewMockSignal(b)
+			signalAPI = signal.NewMockSignal(User, b)
 		}
 
 		s := model.NewSiggo(signalAPI, cfg)
 
-		err := s.Receive()
-		if err != nil {
-			log.Fatal(err)
-		}
+		//err := s.Receive()
+		//if err != nil {
+		//log.Fatal(err)
+		//}
+		s.ReceiveUntil(make(chan struct{}))
+		//<-make(chan struct{})
 
 		//log.Printf("contacts: %v", s.Contacts())
 
