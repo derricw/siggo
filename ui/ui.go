@@ -1,13 +1,16 @@
 package ui
 
 import (
-	//"log"
+	"fmt"
+	"log"
 
 	"github.com/derricw/siggo/model"
 	"github.com/gdamore/tcell"
 	"github.com/pgavlin/femto"
 	"github.com/rivo/tview"
 )
+
+type ConvInfo map[*model.Contact]*model.Conversation
 
 type ChatWindow struct {
 	// todo: maybe use Flex instead?
@@ -23,6 +26,20 @@ type ChatWindow struct {
 func (c *ChatWindow) send(msg string) {
 	// send message to the current contact
 	c.siggo.Send(msg, c.currentContact)
+}
+
+func (c *ChatWindow) update() {
+	convs := c.siggo.Conversations()
+	if convs != nil {
+		c.contactsPanel.Update(convs)
+		currentConv, ok := convs[c.currentContact]
+		if ok {
+			//log.Printf("updating convs: %v", convs)
+			c.conversationPanel.Update(currentConv)
+		} else {
+			panic("no conversation for current contact")
+		}
+	}
 }
 
 type SendPanel struct {
@@ -72,12 +89,27 @@ func NewSendPanel() *SendPanel {
 }
 
 type ContactListPanel struct {
-	*tview.List
+	*tview.TextView
+}
+
+func (p *ContactListPanel) Update(convs ConvInfo) {
+	data := ""
+	log.Printf("updating contact panel...")
+	for c, _ := range convs {
+		id := ""
+		if c.Name != "" {
+			id = c.Name
+		} else {
+			id = c.Number
+		}
+		data += fmt.Sprintf("%s\n", id)
+	}
+	p.SetText(data)
 }
 
 func NewContactListPanel() *ContactListPanel {
 	c := &ContactListPanel{
-		List: tview.NewList(),
+		TextView: tview.NewTextView(),
 	}
 	c.SetTitle("contacts")
 	c.SetTitleAlign(0)
@@ -87,6 +119,11 @@ func NewContactListPanel() *ContactListPanel {
 
 type ConversationPanel struct {
 	*tview.TextView
+}
+
+func (p *ConversationPanel) Update(conv *model.Conversation) {
+	p.SetText(conv.String())
+	p.SetTitle(fmt.Sprintf("%s <%s>", conv.Contact.Name, conv.Contact.Number))
 }
 
 func NewConversationPanel() *ConversationPanel {
@@ -103,22 +140,34 @@ func NewChatWindow(siggo *model.Siggo) *ChatWindow {
 	layout := tview.NewGrid().
 		SetRows(0, 8).
 		SetColumns(20, 0)
-	window := &ChatWindow{
+	w := &ChatWindow{
 		Grid:  layout,
 		siggo: siggo,
 	}
 
-	conversation := NewConversationPanel()
-	contacts := NewContactListPanel()
-	send := NewSendPanel()
+	w.conversationPanel = NewConversationPanel()
+	w.contactsPanel = NewContactListPanel()
+	w.sendPanel = NewSendPanel()
 
 	// primitiv, row, col, rowSpan, colSpan, minGridHeight, maxGridHeight, focus)
 	// TODO: lets make some of the spans confiurable?
-	window.AddItem(contacts, 0, 0, 2, 1, 0, 0, false)
-	window.AddItem(conversation, 0, 1, 1, 1, 0, 0, false)
-	window.AddItem(send, 1, 1, 1, 1, 0, 0, true)
+	w.AddItem(w.contactsPanel, 0, 0, 2, 1, 0, 0, false)
+	w.AddItem(w.conversationPanel, 0, 1, 1, 1, 0, 0, false)
+	w.AddItem(w.sendPanel, 1, 1, 1, 1, 0, 0, true)
 
-	window.siggo = siggo
+	w.siggo = siggo
+	contacts := siggo.Contacts()
+	// get initial contact here by saving the last one
+	// for now we just get one at random
+	for _, c := range contacts {
+		w.currentContact = c
+		break
+	}
+	// update gui when events happen in siggo
+	w.update()
+	siggo.NewInfo = func(conv *model.Conversation) {
+		w.update()
+	}
 
-	return window
+	return w
 }

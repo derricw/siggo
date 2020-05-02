@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/derricw/siggo/signal"
 )
@@ -78,11 +79,18 @@ func NewConversation(contact *Contact) *Conversation {
 	}
 }
 
+type SignalAPI interface {
+	Send(string, string) error
+	Receive() error
+	OnReceived(signal.ReceivedCallback)
+	OnReceipt(signal.ReceiptCallback)
+}
+
 type Siggo struct {
 	config        *Config
 	contacts      map[string]*Contact
 	conversations map[*Contact]*Conversation
-	signal        *signal.Signal
+	signal        SignalAPI
 
 	NewInfo func(*Conversation)
 }
@@ -114,6 +122,14 @@ func (s *Siggo) newConversation(contact *Contact) *Conversation {
 	return conv
 }
 
+func (s *Siggo) newContact(number string) *Contact {
+	contact := &Contact{
+		Number: number,
+	}
+	s.contacts[number] = contact
+	return contact
+}
+
 // Receive
 func (s *Siggo) Receive() error {
 	return s.signal.Receive()
@@ -135,9 +151,10 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 	if !ok {
 		fromStr = contactNumber
 		c = &Contact{
-			Name:   "",
 			Number: contactNumber,
 		}
+		log.Printf("New contact: %v", c)
+		s.contacts[c.Number] = c
 	} else if c.Name == "" {
 		fromStr = contactNumber
 	} else {
@@ -152,6 +169,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
+		log.Printf("new conversation for contact: %v", c)
 		conv = s.newConversation(c)
 	}
 	conv.AddMessage(message)
@@ -161,18 +179,18 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 
 func (s *Siggo) onReceipt(msg *signal.Message) error {
 	receiptMsg := msg.Envelope.ReceiptMessage
-	fmt.Printf("RECEIPT Received:\n")
-	fmt.Printf("  From: %s\n", msg.Envelope.Source)
-	fmt.Printf("  Delivered: %t\n", receiptMsg.IsDelivery)
-	fmt.Printf("  Read: %t\n", receiptMsg.IsRead)
-	fmt.Printf("  Timestamps: %v\n", receiptMsg.Timestamps)
+	//fmt.Printf("RECEIPT Received:\n")
+	//fmt.Printf("  From: %s\n", msg.Envelope.Source)
+	//fmt.Printf("  Delivered: %t\n", receiptMsg.IsDelivery)
+	//fmt.Printf("  Read: %t\n", receiptMsg.IsRead)
+	//fmt.Printf("  Timestamps: %v\n", receiptMsg.Timestamps)
 	// if the message exists, edit it with new data
 	contactNumber := msg.Envelope.Source
 	// if we have a name for this contact, use it
 	// otherwise it will be the phone number
 	c, ok := s.contacts[contactNumber]
 	if !ok {
-		//handle no contact in contactlist
+		c = s.newContact(contactNumber)
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
@@ -195,9 +213,12 @@ func (s *Siggo) Conversations() map[*Contact]*Conversation {
 	return s.conversations
 }
 
+func (s *Siggo) Contacts() map[string]*Contact {
+	return s.contacts
+}
+
 // NewSiggo creates a new model
-func NewSiggo(config *Config) *Siggo {
-	sig := signal.NewSignal(config.UserNumber)
+func NewSiggo(sig SignalAPI, config *Config) *Siggo {
 	contacts := GetContacts(config.UserNumber)
 	conversations := GetConversations(config.UserNumber, contacts)
 	s := &Siggo{
@@ -231,7 +252,9 @@ func GetContacts(userNumber string) map[string]*Contact {
 func GetConversations(userNumber string, contacts map[string]*Contact) map[*Contact]*Conversation {
 	conversations := make(map[*Contact]*Conversation)
 	for _, contact := range contacts {
-		conversations[contact] = NewConversation(contact)
+		fmt.Printf("Adding conversation for: %+v\n", contact)
+		conv := NewConversation(contact)
+		conversations[contact] = conv
 	}
 	return conversations
 }

@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"io/ioutil"
 	"log"
 
 	"github.com/derricw/siggo/model"
+	"github.com/derricw/siggo/signal"
 	"github.com/spf13/cobra"
 )
 
@@ -19,9 +21,20 @@ var receiveCmd = &cobra.Command{
 		cfg := &model.Config{
 			UserNumber: User,
 		}
-		s := model.NewSiggo(cfg)
+
+		var signalAPI model.SignalAPI = signal.NewSignal(User)
+		if Mock != "" {
+			b, err := ioutil.ReadFile(Mock)
+			if err != nil {
+				log.Fatalf("couldn't open mock data")
+			}
+			signalAPI = signal.NewMockSignal(b)
+		}
+
+		s := model.NewSiggo(signalAPI, cfg)
+
 		s.NewInfo = func(conv *model.Conversation) {
-			log.Printf("From: %v\nConv: %s", conv.Contact, conv.String())
+			log.Printf("From: %v | Conv: \n%s", conv.Contact, conv.String())
 		}
 		err := s.Receive()
 		if err != nil {

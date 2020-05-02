@@ -7,9 +7,11 @@ import (
 )
 
 var User string
+var Mock string
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&User, "user", "u", "", "user (currently phone number)")
+	rootCmd.PersistentFlags().StringVarP(&Mock, "mock", "m", "", "mock mode (uses example data)")
 }
 
 var rootCmd = &cobra.Command{

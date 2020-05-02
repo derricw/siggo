@@ -1,10 +1,14 @@
 package cmd
 
 import (
+	"io/ioutil"
+	"log"
+
 	"github.com/rivo/tview"
 	"github.com/spf13/cobra"
 
 	"github.com/derricw/siggo/model"
+	"github.com/derricw/siggo/signal"
 	"github.com/derricw/siggo/ui"
 )
 
@@ -13,7 +17,7 @@ func init() {
 }
 
 var uiCmd = &cobra.Command{
-	Use:   "uitest",
+	Use:   "ui",
 	Short: "",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -22,9 +26,25 @@ var uiCmd = &cobra.Command{
 			UserNumber: User,
 			UserName:   "me",
 		}
-		siggo := model.NewSiggo(cfg)
+		var signalAPI model.SignalAPI = signal.NewSignal(User)
+		if Mock != "" {
+			b, err := ioutil.ReadFile(Mock)
+			if err != nil {
+				log.Fatalf("couldn't open mock data")
+			}
+			signalAPI = signal.NewMockSignal(b)
+		}
 
-		chatWindow := ui.NewChatWindow(siggo)
+		s := model.NewSiggo(signalAPI, cfg)
+
+		err := s.Receive()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		//log.Printf("contacts: %v", s.Contacts())
+
+		chatWindow := ui.NewChatWindow(s)
 		if err := tview.NewApplication().SetRoot(chatWindow, true).SetFocus(chatWindow).Run(); err != nil {
 			panic(err)
 		}
