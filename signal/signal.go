@@ -80,13 +80,27 @@ func (s *Signal) Receive() error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		wire := scanner.Bytes()
-		fmt.Printf("%s\n", wire)
+		//fmt.Printf("%s\n", wire) // TODO: log to file?
 		err = s.ProcessWire(wire)
 		if err != nil {
 			return err
 		}
 	}
 	return err
+}
+
+// Send transmits a message to the specified number
+// Destination is a phone number with country code.
+// signal-cli likes to have a `+` before the number, so we add one if it isn't there.
+func (s *Signal) Send(dest, msg string) error {
+	if !strings.HasPrefix(dest, "+") {
+		dest = fmt.Sprintf("+%s", dest)
+	}
+	_, err := s.Exec("-u", s.uname, "send", dest, "-m", msg)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // ProcessWire processes a single wire message, executing any callbacks we

@@ -119,5 +119,6 @@ func NewChatWindow(siggo *model.Siggo) *ChatWindow {
 	window.AddItem(send, 1, 1, 1, 1, 0, 0, true)
 
 	window.siggo = siggo
+
 	return window
 }

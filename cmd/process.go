@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +13,15 @@ import (
 
 func init() {
 	rootCmd.AddCommand(processCmd)
+}
+
+func printMsg(msg *signal.Message) error {
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s\n", b)
+	return nil
 }
 
 func printSent(msg *signal.Message) error {
@@ -44,8 +54,9 @@ func printReceipt(msg *signal.Message) error {
 
 var processCmd = &cobra.Command{
 	Use:   "process",
-	Short: "process a stream of bytes from stdin",
-	Long:  ``,
+	Short: "process a stream of messages from stdin",
+	Long: `example:
+	signal-cli -u +12067902360 receive --json | siggo process`,
 	Run: func(cmd *cobra.Command, args []string) {
 		sig := signal.NewSignal(User)
 		sig.OnMessage(printMsg)
