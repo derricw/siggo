@@ -77,6 +77,7 @@ func NewSendPanel() *SendPanel {
 	s.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// first let anyone hooked in handle the event
 		if s.KeyEvent != nil {
+			log.Printf("key handling...")
 			e := s.KeyEvent(event)
 			if e == nil {
 				return nil
