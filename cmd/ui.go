@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	//"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -43,15 +44,8 @@ var uiCmd = &cobra.Command{
 
 		s := model.NewSiggo(signalAPI, cfg)
 
-		//err := s.Receive()
-		//if err != nil {
-		//log.Fatal(err)
-		//}
 		s.ReceiveUntil(make(chan struct{}))
-		//<-make(chan struct{})
-
-		//log.Printf("contacts: %v", s.Contacts())
-
+		//tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
 		app := tview.NewApplication()
 		chatWindow := ui.NewChatWindow(s, app)
 		if err := app.SetRoot(chatWindow, true).SetFocus(chatWindow).Run(); err != nil {

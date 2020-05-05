@@ -9,6 +9,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type Mode int
+
+const (
+	NormalMode Mode = iota
+	InsertMode
+	YankMode
+)
+
 type ConvInfo map[*model.Contact]*model.Conversation
 
 type ChatWindow struct {
@@ -16,6 +24,7 @@ type ChatWindow struct {
 	*tview.Grid
 	siggo          *model.Siggo
 	currentContact *model.Contact
+	mode           Mode
 
 	sendPanel         *SendPanel
 	contactsPanel     *ContactListPanel
@@ -27,6 +36,22 @@ func (c *ChatWindow) InsertMode() {
 	log.Info("INSERT MODE")
 	c.app.SetFocus(c.sendPanel)
 	c.sendPanel.SetBorderColor(tcell.ColorOrange)
+	c.mode = InsertMode
+}
+
+func (c *ChatWindow) YankMode() {
+	log.Info("YANK MODE")
+	c.conversationPanel.SetBorderColor(tcell.ColorOrange)
+	c.mode = YankMode
+}
+
+func (c *ChatWindow) NormalMode() {
+	log.Info("NORMAL MODE")
+	c.app.SetFocus(c)
+	// clear our highlights
+	c.conversationPanel.SetBorderColor(tcell.ColorWhite)
+	c.sendPanel.SetBorderColor(tcell.ColorWhite)
+	c.mode = NormalMode
 }
 
 // TODO: remove code duplication with ContactDown()
@@ -91,8 +116,7 @@ func (s *SendPanel) Send() {
 }
 
 func (s *SendPanel) Defocus() {
-	s.parent.app.SetFocus(s.parent)
-	s.SetBorderColor(tcell.ColorWhite)
+	s.parent.NormalMode()
 }
 
 func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
@@ -104,7 +128,8 @@ func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 	s.SetTitle(" send: ")
 	s.SetTitleAlign(0)
 	s.SetBorder(true)
-	s.SetFieldBackgroundColor(tcell.ColorBlack)
+	//s.SetFieldBackgroundColor(tcell.ColorDefault)
+	s.SetFieldBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
 	s.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyESC:
@@ -189,6 +214,7 @@ type ConversationPanel struct {
 }
 
 func (p *ConversationPanel) Update(conv *model.Conversation) {
+	p.Clear()
 	p.SetText(conv.String())
 	p.SetTitle(fmt.Sprintf("%s <%s>", conv.Contact.Name, conv.Contact.Number))
 }
@@ -237,6 +263,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 105:
 				w.InsertMode()
 				return nil
+			case 121:
+				w.YankMode()
+				return nil
 			}
 		// pass some events on to the conversation panel
 		case tcell.KeyPgUp:
@@ -250,6 +279,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			return nil
 		case tcell.KeyHome:
 			convInputHandler(event, func(p tview.Primitive) {})
+			return nil
+		case tcell.KeyESC:
+			w.NormalMode()
 			return nil
 		}
 		return event

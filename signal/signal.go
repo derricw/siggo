@@ -5,11 +5,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
+	"os/user"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
+
+// SignalDataDir - signal-cli saves user data here
+var SignalDataDir string = ".local/share/signal-cli/data"
+
+//type SignalUserData struct {
+//ContactStore []
 
 type MessageCallback func(*Message) error
 type SentCallback func(*Message) error
@@ -115,6 +123,21 @@ func (s *Signal) Send(dest, msg string) error {
 		return err
 	}
 	return nil
+}
+
+// ReadContactList attempts to read an existing contact list from the signal user directory.
+func (s *Signal) ReadContactList() error {
+	usr, err := user.Current()
+	if err != nil {
+		return err
+	}
+	homeDir := usr.HomeDir
+	dataFile := fmt.Sprintf("%s/%s/%s", homeDir, SignalDataDir, s.uname)
+	userData, err := ioutil.ReadFile(dataFile)
+
+	log.Printf("%s\n", userData)
+	return nil
+
 }
 
 // ProcessWire processes a single wire message, executing any callbacks we
