@@ -1,7 +1,7 @@
 package signal
 
 type Message struct {
-	Envelope Envelope `json:"envelope"`
+	Envelope *Envelope `json:"envelope"`
 }
 
 type Envelope struct {
@@ -12,6 +12,7 @@ type Envelope struct {
 	CallMessage    *CallMessage    `json:"callMessage"`
 	ReceiptMessage *ReceiptMessage `json:"receiptMessage"`
 	DataMessage    *DataMessage    `json:"dataMessage"`
+	SourceDevice   int             `json:"sourceDevice"`
 }
 
 type SyncMessage struct {

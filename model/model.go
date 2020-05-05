@@ -2,19 +2,21 @@ package model
 
 import (
 	"fmt"
+	"sort"
+	"time"
 
 	"github.com/derricw/siggo/signal"
 	log "github.com/sirupsen/logrus"
 )
 
 var DeliveryStatus map[bool]string = map[bool]string{
-	true:  "<",
-	false: "?",
+	true:  "✓",
+	false: "X",
 }
 
 var ReadStatus map[bool]string = map[bool]string{
-	true:  ">",
-	false: "?",
+	true:  "✓",
+	false: "X",
 }
 
 type Config struct {
@@ -27,22 +29,46 @@ type Contact struct {
 	Name   string
 }
 
+type ContactList map[string]*Contact
+
+// Sorted returns a sorted list of contacts
+func (cl ContactList) Sorted() []*Contact {
+	list := make([]*Contact, 0)
+	for _, c := range cl {
+		list = append(list, c)
+	}
+	sort.Slice(list, func(i, j int) bool { return list[i].Number < list[j].Number })
+	return list
+}
+
 type Message struct {
 	Content     string
 	From        string
 	Timestamp   int64
 	IsDelivered bool
 	IsRead      bool
+	FromSelf    bool
 }
 
 func (m *Message) String() string {
-	return fmt.Sprintf("%d|%s%s %s: %s\n",
-		m.Timestamp,
+	var fromStr = m.From
+	if len(m.From) > 12 {
+		fromStr = m.From[:12]
+	}
+	// Magical Ref Data: Mon Jan 2 15:04:05 MST 2006
+	data := fmt.Sprintf("%s|%s%s %12v: %s\n",
+		time.Unix(0, m.Timestamp*1000000).Format("2006-01-02 15:05:05"),
 		DeliveryStatus[m.IsDelivered],
 		ReadStatus[m.IsRead],
-		m.From,
+		fromStr,
 		m.Content,
 	)
+	if m.FromSelf == true {
+		data = "[::d]" + data + "[::-]"
+	} else if m.IsRead == false {
+		data = "[::b]" + data + "[::-]"
+	}
+	return data
 }
 
 type Conversation struct {
@@ -70,6 +96,18 @@ func (c *Conversation) AddMessage(message *Message) {
 	}
 }
 
+// CaughtUp iterates back through the messages of the conversation marking the un-read ones
+// as read. We call this after we switch to this conversation.
+func (c *Conversation) CaughtUp() {
+	for i := len(c.MessageOrder) - 1; i >= 0; i-- {
+		msg := c.Messages[c.MessageOrder[i]]
+		if msg.IsRead && !msg.FromSelf {
+			break
+		}
+		c.Messages[c.MessageOrder[i]].IsRead = true
+	}
+}
+
 func NewConversation(contact *Contact) *Conversation {
 	return &Conversation{
 		Contact:       contact,
@@ -85,11 +123,12 @@ type SignalAPI interface {
 	ReceiveUntil(chan struct{})
 	OnReceived(signal.ReceivedCallback)
 	OnReceipt(signal.ReceiptCallback)
+	OnSent(signal.SentCallback)
 }
 
 type Siggo struct {
 	config        *Config
-	contacts      map[string]*Contact
+	contacts      ContactList
 	conversations map[*Contact]*Conversation
 	contactOrder  []*Contact
 	signal        SignalAPI
@@ -99,22 +138,6 @@ type Siggo struct {
 
 // Send sends a message to a contact.
 func (s *Siggo) Send(msg string, contact *Contact) error {
-	// update for whoever wants to know
-	// ui might want to know immediately
-	conv, ok := s.conversations[contact]
-	if !ok {
-		conv = s.newConversation(contact)
-	}
-	message := &Message{
-		Content:     msg,
-		From:        s.config.UserName,
-		Timestamp:   0,
-		IsDelivered: false,
-		IsRead:      false,
-	}
-	s.onSend(message, conv)
-
-	// actually send the message
 	return s.signal.Send(contact.Number, msg)
 }
 
@@ -142,7 +165,37 @@ func (s *Siggo) ReceiveUntil(done chan struct{}) {
 	s.signal.ReceiveUntil(done)
 }
 
-func (s *Siggo) onSend(message *Message, conv *Conversation) {}
+func (s *Siggo) onSent(msg *signal.Message) error {
+	// add new message to conversation
+	sentMsg := msg.Envelope.SyncMessage.SentMessage
+	contactNumber := sentMsg.Destination
+	// if we have a name for this contact, use it
+	// otherwise it will be the phone number
+	c, ok := s.contacts[contactNumber]
+	if !ok {
+		c = &Contact{
+			Number: contactNumber,
+		}
+		log.Printf("New contact: %v", c)
+		s.contacts[c.Number] = c
+	}
+	message := &Message{
+		Content:     sentMsg.Message,
+		From:        " ~ ",
+		Timestamp:   sentMsg.Timestamp,
+		IsDelivered: false,
+		IsRead:      false,
+		FromSelf:    true,
+	}
+	conv, ok := s.conversations[c]
+	if !ok {
+		log.Printf("new conversation for contact: %v", c)
+		conv = s.newConversation(c)
+	}
+	conv.AddMessage(message)
+	s.NewInfo(conv)
+	return nil
+}
 
 func (s *Siggo) onReceived(msg *signal.Message) error {
 	// add new message to conversation
@@ -203,10 +256,19 @@ func (s *Siggo) onReceipt(msg *signal.Message) error {
 		if !ok {
 			// TODO: handle case where we get a read receipt for
 			// a message that we don't have
+			log.Warnf("read receipt for message we don't have: %+v", msg.Envelope.ReceiptMessage)
 			continue
 		}
-		message.IsDelivered = receiptMsg.IsDelivery
-		message.IsRead = receiptMsg.IsRead
+		if receiptMsg.IsRead {
+			// for whatever reason messages can be marked as
+			// read but not delivered, so we go ahead and assume any
+			// message that has been read has also been delivered
+			message.IsDelivered = true
+			message.IsRead = true
+		} else {
+			message.IsDelivered = receiptMsg.IsDelivery
+			message.IsRead = receiptMsg.IsRead
+		}
 	}
 	return nil
 }
@@ -215,7 +277,7 @@ func (s *Siggo) Conversations() map[*Contact]*Conversation {
 	return s.conversations
 }
 
-func (s *Siggo) Contacts() map[string]*Contact {
+func (s *Siggo) Contacts() ContactList {
 	return s.contacts
 }
 
@@ -232,16 +294,16 @@ func NewSiggo(sig SignalAPI, config *Config) *Siggo {
 		NewInfo: func(*Conversation) {}, // noop
 	}
 	//sig.OnMessage(s.?)
-	//sig.OnSent(s.?)
 
+	sig.OnSent(s.onSent)
 	sig.OnReceived(s.onReceived)
 	sig.OnReceipt(s.onReceipt)
 	return s
 }
 
 // GetContacts reads the contact list from disk for a given user
-func GetContacts(userNumber string) map[string]*Contact {
-	list := make(map[string]*Contact)
+func GetContacts(userNumber string) ContactList {
+	list := make(ContactList)
 	list[userNumber] = &Contact{
 		Number: userNumber,
 		Name:   "me",
@@ -251,10 +313,10 @@ func GetContacts(userNumber string) map[string]*Contact {
 
 // GetConversations reads conversations from disk for a given user
 // and contact list
-func GetConversations(userNumber string, contacts map[string]*Contact) map[*Contact]*Conversation {
+func GetConversations(userNumber string, contacts ContactList) map[*Contact]*Conversation {
 	conversations := make(map[*Contact]*Conversation)
 	for _, contact := range contacts {
-		fmt.Printf("Adding conversation for: %+v\n", contact)
+		log.Printf("Adding conversation for: %+v\n", contact)
 		conv := NewConversation(contact)
 		conversations[contact] = conv
 	}

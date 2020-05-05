@@ -5,7 +5,6 @@ import (
 
 	"github.com/derricw/siggo/model"
 	"github.com/gdamore/tcell"
-	"github.com/pgavlin/femto"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,10 +20,43 @@ type ChatWindow struct {
 	sendPanel         *SendPanel
 	contactsPanel     *ContactListPanel
 	conversationPanel *ConversationPanel
+	app               *tview.Application
 }
 
-func (c *ChatWindow) ContactUp()   {}
-func (c *ChatWindow) ContactDown() {}
+func (c *ChatWindow) InsertMode() {
+	log.Info("INSERT MODE")
+	c.app.SetFocus(c.sendPanel)
+	c.sendPanel.SetBorderColor(tcell.ColorOrange)
+}
+
+// TODO: remove code duplication with ContactDown()
+func (c *ChatWindow) ContactUp() {
+	log.Info("PREVIOUS CONVERSATION")
+	prevContact := c.contactsPanel.Previous()
+	if prevContact != c.currentContact {
+		c.currentContact = prevContact
+		c.contactsPanel.Update()
+		currentConv, ok := c.siggo.Conversations()[c.currentContact]
+		if ok {
+			c.conversationPanel.Update(currentConv)
+			currentConv.CaughtUp()
+		}
+	}
+}
+
+func (c *ChatWindow) ContactDown() {
+	log.Info("NEXT CONVERSATION")
+	nextContact := c.contactsPanel.Next()
+	if nextContact != c.currentContact {
+		c.currentContact = nextContact
+		c.contactsPanel.Update()
+		currentConv, ok := c.siggo.Conversations()[c.currentContact]
+		if ok {
+			c.conversationPanel.Update(currentConv)
+			currentConv.CaughtUp()
+		}
+	}
+}
 
 func (c *ChatWindow) send(msg string) {
 	// send message to the current contact
@@ -34,10 +66,9 @@ func (c *ChatWindow) send(msg string) {
 func (c *ChatWindow) update() {
 	convs := c.siggo.Conversations()
 	if convs != nil {
-		c.contactsPanel.Update(convs)
+		c.contactsPanel.Update()
 		currentConv, ok := convs[c.currentContact]
 		if ok {
-			//log.Printf("updating convs: %v", convs)
 			c.conversationPanel.Update(currentConv)
 		} else {
 			panic("no conversation for current contact")
@@ -46,52 +77,41 @@ func (c *ChatWindow) update() {
 }
 
 type SendPanel struct {
-	//*tview.TextView
-	//*tview.InputField
-	*femto.View
-	sendCallbacks []func(string)
-	KeyEvent      func(*tcell.EventKey) *tcell.EventKey
+	*tview.InputField
+	parent *ChatWindow
+	siggo  *model.Siggo
 }
 
 func (s *SendPanel) Send() {
-	// publish message to anyone listening
-	msg := s.Buf.LineArray.String()
-	if len(s.sendCallbacks) > 0 {
-		for _, cb := range s.sendCallbacks {
-			cb(msg)
-		}
-	}
-	// clear input buffer
-	s.OpenBuffer(femto.NewBufferFromString("", ""))
+	msg := s.GetText()
+	contact := s.parent.currentContact
+	s.siggo.Send(msg, contact)
+	log.Infof("sent message: %s to contact: %s", msg, contact)
+	s.SetText("")
 }
 
-func NewSendPanel() *SendPanel {
+func (s *SendPanel) Defocus() {
+	s.parent.app.SetFocus(s.parent)
+	s.SetBorderColor(tcell.ColorWhite)
+}
+
+func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 	s := &SendPanel{
-		//TextView: tview.NewTextView(),
-		//InputField: tview.NewInputField(),
-		View: femto.NewView(femto.NewBufferFromString("", "")),
+		InputField: tview.NewInputField(),
+		siggo:      siggo,
+		parent:     parent,
 	}
 	s.SetTitle(" send: ")
 	s.SetTitleAlign(0)
 	s.SetBorder(true)
+	s.SetFieldBackgroundColor(tcell.ColorBlack)
 	s.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// first let anyone hooked in handle the event
-		if s.KeyEvent != nil {
-			log.Printf("key handling...")
-			e := s.KeyEvent(event)
-			if e == nil {
-				return nil
-			}
-		}
-		// then handle it ourselves
 		switch event.Key() {
+		case tcell.KeyESC:
+			s.Defocus()
+			return nil
 		case tcell.KeyEnter:
-			if event.Modifiers() == 4 {
-				s.Send()
-				return nil
-			}
-			return event
-		case tcell.KeyCtrlQ:
+			s.Send()
 			return nil
 		}
 		return event
@@ -101,27 +121,63 @@ func NewSendPanel() *SendPanel {
 
 type ContactListPanel struct {
 	*tview.TextView
+	siggo          *model.Siggo
+	parent         *ChatWindow
+	sortedContacts []*model.Contact
+	currentIndex   int
 }
 
-func (p *ContactListPanel) Update(convs ConvInfo) {
+func (cl *ContactListPanel) Next() *model.Contact {
+	if cl.currentIndex < len(cl.sortedContacts)-1 {
+		cl.currentIndex++
+	}
+	return cl.sortedContacts[cl.currentIndex]
+}
+
+func (cl *ContactListPanel) Previous() *model.Contact {
+	if cl.currentIndex > 0 {
+		cl.currentIndex--
+	}
+	return cl.sortedContacts[cl.currentIndex]
+}
+
+func (cl *ContactListPanel) Update() {
 	data := ""
 	log.Printf("updating contact panel...")
-	for c, _ := range convs {
+	// this is dumb, we re-sort every update
+	// TODO: don't
+	sorted := cl.siggo.Contacts().Sorted()
+	log.Printf("sorted contacts: %v", sorted)
+	//log.Printf("current contact idx: %v", cl.currentIndex)
+	for i, c := range sorted {
 		id := ""
 		if c.Name != "" {
 			id = c.Name
 		} else {
 			id = c.Number
 		}
-		data += fmt.Sprintf("%s\n", id)
+		line := fmt.Sprintf("%s\n", id)
+		if cl.currentIndex == i {
+			line = "[::r]" + line + "[::-]"
+			cl.currentIndex = i
+		}
+		data += line
 	}
-	p.SetText(data)
+	//log.Printf("data: %s", data)
+	cl.sortedContacts = sorted
+	cl.SetText(data)
 }
 
-func NewContactListPanel() *ContactListPanel {
+//func (cl *ContactListPanel)
+
+// NewContactListPanel creates a new contact list widget
+func NewContactListPanel(parent *ChatWindow, siggo *model.Siggo) *ContactListPanel {
 	c := &ContactListPanel{
 		TextView: tview.NewTextView(),
+		siggo:    siggo,
+		parent:   parent,
 	}
+	c.SetDynamicColors(true)
 	c.SetTitle("contacts")
 	c.SetTitleAlign(0)
 	c.SetBorder(true)
@@ -137,71 +193,85 @@ func (p *ConversationPanel) Update(conv *model.Conversation) {
 	p.SetTitle(fmt.Sprintf("%s <%s>", conv.Contact.Name, conv.Contact.Number))
 }
 
-func NewConversationPanel() *ConversationPanel {
+func (p *ConversationPanel) Clear() {
+	p.SetText("")
+}
+
+func NewConversationPanel(siggo *model.Siggo) *ConversationPanel {
 	c := &ConversationPanel{
 		TextView: tview.NewTextView(),
 	}
+	c.SetDynamicColors(true)
 	c.SetTitle("<name of contact>")
 	c.SetTitleAlign(0)
 	c.SetBorder(true)
 	return c
 }
 
-func NewChatWindow(siggo *model.Siggo) *ChatWindow {
+func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	layout := tview.NewGrid().
-		SetRows(0, 8).
+		SetRows(0, 3).
 		SetColumns(20, 0)
 	w := &ChatWindow{
 		Grid:  layout,
 		siggo: siggo,
+		app:   app,
 	}
 
-	w.conversationPanel = NewConversationPanel()
-	w.contactsPanel = NewContactListPanel()
-	w.sendPanel = NewSendPanel()
-	// Setup keys
-	// TODO: lets move this somewhere better so we can merge all of our keybinds
-	w.sendPanel.KeyEvent = func(event *tcell.EventKey) *tcell.EventKey {
-		log.Printf("Key Event: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+	w.conversationPanel = NewConversationPanel(siggo)
+	convInputHandler := w.conversationPanel.InputHandler()
+	w.contactsPanel = NewContactListPanel(w, siggo)
+	w.sendPanel = NewSendPanel(w, siggo)
+	w.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Setup keys
+		log.Printf("Key Event <MAIN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
 		switch event.Key() {
-		case tcell.KeyDown:
-			log.Printf("key Down...")
-			if event.Modifiers() == 4 {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 106:
 				w.ContactDown()
 				return nil
-			}
-			return event
-		case tcell.KeyUp:
-			log.Printf("key Up...")
-			if event.Modifiers() == 4 {
+			case 107:
 				w.ContactUp()
 				return nil
+			case 105:
+				w.InsertMode()
+				return nil
 			}
-			return event
-		case tcell.KeyCtrlQ:
+		// pass some events on to the conversation panel
+		case tcell.KeyPgUp:
+			convInputHandler(event, func(p tview.Primitive) {})
+			return nil
+		case tcell.KeyPgDn:
+			convInputHandler(event, func(p tview.Primitive) {})
+			return nil
+		case tcell.KeyEnd:
+			convInputHandler(event, func(p tview.Primitive) {})
+			return nil
+		case tcell.KeyHome:
+			convInputHandler(event, func(p tview.Primitive) {})
 			return nil
 		}
 		return event
-	}
+	})
 
 	// primitiv, row, col, rowSpan, colSpan, minGridHeight, maxGridHeight, focus)
 	// TODO: lets make some of the spans confiurable?
 	w.AddItem(w.contactsPanel, 0, 0, 2, 1, 0, 0, false)
 	w.AddItem(w.conversationPanel, 0, 1, 1, 1, 0, 0, false)
-	w.AddItem(w.sendPanel, 1, 1, 1, 1, 0, 0, true)
+	w.AddItem(w.sendPanel, 1, 1, 1, 1, 0, 0, false)
 
 	w.siggo = siggo
-	contacts := siggo.Contacts()
-	// get initial contact here by saving the last one
-	// for now we just get one at random
-	for _, c := range contacts {
-		w.currentContact = c
-		break
+	contacts := siggo.Contacts().Sorted()
+	if len(contacts) > 0 {
+		w.currentContact = contacts[0]
 	}
 	// update gui when events happen in siggo
 	w.update()
 	siggo.NewInfo = func(conv *model.Conversation) {
-		w.update()
+		app.QueueUpdateDraw(func() {
+			w.update()
+		})
 	}
 
 	return w

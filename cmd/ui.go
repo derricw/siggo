@@ -52,8 +52,9 @@ var uiCmd = &cobra.Command{
 
 		//log.Printf("contacts: %v", s.Contacts())
 
-		chatWindow := ui.NewChatWindow(s)
-		if err := tview.NewApplication().SetRoot(chatWindow, true).SetFocus(chatWindow).Run(); err != nil {
+		app := tview.NewApplication()
+		chatWindow := ui.NewChatWindow(s, app)
+		if err := app.SetRoot(chatWindow, true).SetFocus(chatWindow).Run(); err != nil {
 			panic(err)
 		}
 	},

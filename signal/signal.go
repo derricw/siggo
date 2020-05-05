@@ -97,7 +97,7 @@ func (s *Signal) ReceiveUntil(done chan struct{}) {
 		for len(done) == 0 {
 			err := s.Receive()
 			if err != nil {
-				log.Printf("receive failed: %s", err)
+				log.Printf("receive failed: %v", err)
 			}
 		}
 	}()

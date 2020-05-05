@@ -3,35 +3,29 @@ package signal
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
-var exampleSendReceipt string = `{"envelope":
-  {"source":"+%s",
-   "sourceDevice":1,
-   "relay":null,
-   "timestamp":%d,
-   "isReceipt":false,
-   "dataMessage":null,
-   "syncMessage":
-     {"sentMessage":
-	   {"timestamp":%d,
-	    "message":"%d",
-		"expiresInSeconds":0,
-		"attachments":[],
-		"groupInfo":null,
-		"destination":"+%s"
-	   },
-	 "blockedNumbers":null,
-	 "readMessages":null,
-	 "type":null
+var fakeSendReceipt *Message = &Message{
+	Envelope: &Envelope{
+		Source:       "",
+		SourceDevice: 5,
+		Timestamp:    0,
+		IsReceipt:    false,
+		DataMessage:  nil,
+		SyncMessage: &SyncMessage{
+			SentMessage: &SentMessage{
+				Timestamp:   0,
+				Message:     "",
+				Destination: "",
+			},
+		},
 	},
-	"callMessage":null,
-	"receiptMessage":null
-  }
 }
-`
 
 // MockSignal implements siggo's SignalAPI interface
 type MockSignal struct {
@@ -43,8 +37,18 @@ type MockSignal struct {
 func (ms *MockSignal) Send(dest, msg string) error {
 	// send a fake message, just puts in on the "wire"
 	timestamp := time.Now().Unix()
-	fakeWire := fmt.Sprintf(exampleSendReceipt, ms.userNumber, timestamp, timestamp, msg, dest)
-	ms.exampleData = append(ms.exampleData, fakeWire...)
+	fakeWire := fakeSendReceipt
+	fakeWire.Envelope.Timestamp = timestamp
+	fakeWire.Envelope.SyncMessage.SentMessage.Timestamp = timestamp
+	fakeWire.Envelope.SyncMessage.SentMessage.Message = msg
+	fakeWire.Envelope.SyncMessage.SentMessage.Destination = dest
+
+	log.Printf("%v", fakeWire)
+	b, err := json.Marshal(fakeWire)
+	if err != nil {
+		return fmt.Errorf("failed to marshal send receipt: %v", err)
+	}
+	ms.exampleData = append(ms.exampleData, b...)
 	return nil
 }
 
