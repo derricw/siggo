@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"time"
@@ -27,17 +28,39 @@ type Config struct {
 type Contact struct {
 	Number string
 	Name   string
+	Index  int
 }
 
 type ContactList map[string]*Contact
 
-// Sorted returns a sorted list of contacts
-func (cl ContactList) Sorted() []*Contact {
+// List returns a list of contacts (in random order)
+func (cl ContactList) List() []*Contact {
 	list := make([]*Contact, 0)
 	for _, c := range cl {
 		list = append(list, c)
 	}
+	return list
+}
+
+// SortedByNumber returns a slice of contacts sorted by phone number
+// Idk why anyone would ever want to use this but here it is.
+func (cl ContactList) SortedByNumber() []*Contact {
+	list := cl.List()
 	sort.Slice(list, func(i, j int) bool { return list[i].Number < list[j].Number })
+	return list
+}
+
+// SortedByName returns a slice of contacts sorted alphabetically
+func (cl ContactList) SortedByName() []*Contact {
+	list := cl.List()
+	sort.Slice(list, func(i, j int) bool { return list[i].Name < list[j].Name })
+	return list
+}
+
+// SortedByIndex returns a slice of contacts sorted by index provided by signal-cli
+func (cl ContactList) SortedByIndex() []*Contact {
+	list := cl.List()
+	sort.Slice(list, func(i, j int) bool { return list[i].Index < list[j].Index })
 	return list
 }
 
@@ -57,7 +80,8 @@ func (m *Message) String() string {
 	}
 	// Magical Ref Data: Mon Jan 2 15:04:05 MST 2006
 	data := fmt.Sprintf("%s|%s%s %12v: %s\n",
-		time.Unix(0, m.Timestamp*1000000).Format("2006-01-02 15:05:05"),
+		// lets come up with a way to avoid the *1000000
+		time.Unix(0, m.Timestamp*1000000).Format("2006-01-02 15:04:05"),
 		DeliveryStatus[m.IsDelivered],
 		ReadStatus[m.IsRead],
 		fromStr,
@@ -96,6 +120,16 @@ func (c *Conversation) AddMessage(message *Message) {
 	}
 }
 
+// PopMessage just removes the last message, if it exists
+func (c *Conversation) PopMessage() {
+	nMessage := len(c.MessageOrder)
+	if nMessage > 0 {
+		lastMsg := c.MessageOrder[nMessage-1]
+		c.MessageOrder = c.MessageOrder[:nMessage-1]
+		delete(c.Messages, lastMsg)
+	}
+}
+
 // CaughtUp iterates back through the messages of the conversation marking the un-read ones
 // as read. We call this after we switch to this conversation.
 func (c *Conversation) CaughtUp() {
@@ -106,6 +140,7 @@ func (c *Conversation) CaughtUp() {
 		}
 		c.Messages[c.MessageOrder[i]].IsRead = true
 	}
+	c.HasNewMessage = false
 }
 
 func NewConversation(contact *Contact) *Conversation {
@@ -138,7 +173,29 @@ type Siggo struct {
 
 // Send sends a message to a contact.
 func (s *Siggo) Send(msg string, contact *Contact) error {
-	return s.signal.Send(contact.Number, msg)
+	message := &Message{
+		Content:     msg,
+		From:        " ~ ",
+		Timestamp:   time.Now().Unix() * 1000,
+		IsDelivered: false,
+		IsRead:      false,
+		FromSelf:    true,
+	}
+	conv, ok := s.conversations[contact]
+	if !ok {
+		log.Printf("new conversation for contact: %v", contact)
+		conv = s.newConversation(contact)
+	}
+	conv.AddMessage(message)
+	s.NewInfo(conv)
+	// finally send the message
+	err := s.signal.Send(contact.Number, msg)
+	if err != nil {
+		message.Content = fmt.Sprintf("FAILED TO SEND: %s", message.Content)
+		s.NewInfo(conv)
+		return err
+	}
+	return nil
 }
 
 func (s *Siggo) newConversation(contact *Contact) *Conversation {
@@ -167,6 +224,7 @@ func (s *Siggo) ReceiveUntil(done chan struct{}) {
 
 func (s *Siggo) onSent(msg *signal.Message) error {
 	// add new message to conversation
+	//log.Infof("sent msg: %+v", msg)
 	sentMsg := msg.Envelope.SyncMessage.SentMessage
 	contactNumber := sentMsg.Destination
 	// if we have a name for this contact, use it
@@ -256,7 +314,11 @@ func (s *Siggo) onReceipt(msg *signal.Message) error {
 		if !ok {
 			// TODO: handle case where we get a read receipt for
 			// a message that we don't have
-			log.Warnf("read receipt for message we don't have: %+v", msg.Envelope.ReceiptMessage)
+			b, err := json.Marshal(msg)
+			if err != nil {
+				log.Warnf("couldn't marshal receipt for message we don't have: %v", err)
+			}
+			log.Warnf("read receipt for message we don't have: %s", b)
 			continue
 		}
 		if receiptMsg.IsRead {
@@ -307,6 +369,22 @@ func GetContacts(userNumber string) ContactList {
 	list[userNumber] = &Contact{
 		Number: userNumber,
 		Name:   "me",
+		Index:  0,
+	}
+	sig := signal.NewSignal(userNumber)
+	contacts, err := sig.GetContactList()
+	if err != nil {
+		log.Warnf("failed to read contacts from disk: %v", err)
+		return list
+	}
+	for _, c := range contacts {
+		if c.InboxPosition != nil {
+			list[c.Number] = &Contact{
+				Number: c.Number,
+				Name:   c.Name,
+				Index:  *c.InboxPosition,
+			}
+		}
 	}
 	return list
 }

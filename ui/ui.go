@@ -83,11 +83,6 @@ func (c *ChatWindow) ContactDown() {
 	}
 }
 
-func (c *ChatWindow) send(msg string) {
-	// send message to the current contact
-	c.siggo.Send(msg, c.currentContact)
-}
-
 func (c *ChatWindow) update() {
 	convs := c.siggo.Conversations()
 	if convs != nil {
@@ -110,7 +105,7 @@ type SendPanel struct {
 func (s *SendPanel) Send() {
 	msg := s.GetText()
 	contact := s.parent.currentContact
-	s.siggo.Send(msg, contact)
+	go s.siggo.Send(msg, contact)
 	log.Infof("sent message: %s to contact: %s", msg, contact)
 	s.SetText("")
 }
@@ -171,7 +166,8 @@ func (cl *ContactListPanel) Update() {
 	log.Printf("updating contact panel...")
 	// this is dumb, we re-sort every update
 	// TODO: don't
-	sorted := cl.siggo.Contacts().Sorted()
+	sorted := cl.siggo.Contacts().SortedByIndex()
+	convs := cl.siggo.Conversations()
 	log.Printf("sorted contacts: %v", sorted)
 	//log.Printf("current contact idx: %v", cl.currentIndex)
 	for i, c := range sorted {
@@ -185,6 +181,8 @@ func (cl *ContactListPanel) Update() {
 		if cl.currentIndex == i {
 			line = "[::r]" + line + "[::-]"
 			cl.currentIndex = i
+		} else if convs[c].HasNewMessage {
+			line = "[::b]*" + line + "[::-]"
 		}
 		data += line
 	}
@@ -294,7 +292,7 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	w.AddItem(w.sendPanel, 1, 1, 1, 1, 0, 0, false)
 
 	w.siggo = siggo
-	contacts := siggo.Contacts().Sorted()
+	contacts := siggo.Contacts().SortedByIndex()
 	if len(contacts) > 0 {
 		w.currentContact = contacts[0]
 	}

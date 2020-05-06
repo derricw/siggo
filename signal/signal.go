@@ -16,8 +16,42 @@ import (
 // SignalDataDir - signal-cli saves user data here
 var SignalDataDir string = ".local/share/signal-cli/data"
 
-//type SignalUserData struct {
-//ContactStore []
+// SignalContact is the data signal-cli saves for each contact
+// in SignalDataDir/<phonenumber>
+type SignalContact struct {
+	Name                  string `json:"name"`
+	Number                string `json:"number"`
+	Color                 string `json:"color"`
+	MessageExpirationTime int    `json:"messageExpirationTime"`
+	ProfileKey            string `json:"profileKey"`
+	Blocked               bool   `json:"blocked"`
+	InboxPosition         *int   `json:"inboxPosition"`
+	Archived              bool   `json:"archived"`
+}
+
+// SignalGroup is the data that signal-cli saves for each group
+// in SignalDataDir/<phonenumber>
+type SignalGroup struct {
+	GroupId               string        `json:"groupId"`
+	Name                  string        `json:"name"`
+	Members               []interface{} `json:"members"`
+	Color                 string        `json:"color"`
+	Blocked               bool          `json:"blocked"`
+	InboxPosition         int           `json:"inboxPosition"`
+	Archived              bool          `json:"archived"`
+	MessageExpirationTime int           `json:"messageExpirationTime"`
+}
+
+// SignalUserData is the data signal saves for a given user
+// in SignalDataDir/<phonenumber>
+type SignalUserData struct {
+	ContactStore struct {
+		Contacts []*SignalContact `json:"contacts"`
+	} `json:"contactStore"`
+	GroupStore struct {
+		Groups []*SignalGroup `json:"groups"`
+	} `json:"groupStore"`
+}
 
 type MessageCallback func(*Message) error
 type SentCallback func(*Message) error
@@ -125,19 +159,31 @@ func (s *Signal) Send(dest, msg string) error {
 	return nil
 }
 
-// ReadContactList attempts to read an existing contact list from the signal user directory.
-func (s *Signal) ReadContactList() error {
+func (s *Signal) GetUserData() (*SignalUserData, error) {
 	usr, err := user.Current()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	homeDir := usr.HomeDir
 	dataFile := fmt.Sprintf("%s/%s/%s", homeDir, SignalDataDir, s.uname)
-	userData, err := ioutil.ReadFile(dataFile)
+	b, err := ioutil.ReadFile(dataFile)
+	if err != nil {
+		return nil, err
+	}
+	userData := &SignalUserData{}
+	if err = json.Unmarshal(b, userData); err != nil {
+		return nil, err
+	}
+	return userData, nil
+}
 
-	log.Printf("%s\n", userData)
-	return nil
-
+// GetContactList attempts to read an existing contact list from the signal user directory.
+func (s *Signal) GetContactList() ([]*SignalContact, error) {
+	userData, err := s.GetUserData()
+	if err != nil {
+		return nil, err
+	}
+	return userData.ContactStore.Contacts, nil
 }
 
 // ProcessWire processes a single wire message, executing any callbacks we
