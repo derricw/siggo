@@ -2,6 +2,10 @@ package ui
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"time"
 
 	"github.com/derricw/siggo/model"
 	"github.com/gdamore/tcell"
@@ -81,6 +85,34 @@ func (c *ChatWindow) ContactDown() {
 			currentConv.CaughtUp()
 		}
 	}
+}
+
+// Compose opens an EDITOR to compose a command. If any text is saved in the buffer,
+// we send it as a message to the current conversation.
+func (c *ChatWindow) Compose() {
+	msg := ""
+	success := c.app.Suspend(func() {
+		msg = FancyCompose()
+	})
+	// need to sleep because there seems to be a race condition in tview
+	// https://github.com/rivo/tview/issues/244
+	time.Sleep(100 * time.Millisecond)
+	if !success {
+		log.Error("failed to suspend siggo")
+		return
+	}
+	if msg != "" {
+		contact := c.currentContact
+		go c.siggo.Send(msg, contact)
+		log.Infof("sent message: %s to contact: %s", msg, contact)
+	}
+}
+
+// Quit shuts down gracefully
+func (c *ChatWindow) Quit() {
+	c.app.Stop()
+	// do we need to do anything else?
+	os.Exit(0)
 }
 
 func (c *ChatWindow) update() {
@@ -191,8 +223,6 @@ func (cl *ContactListPanel) Update() {
 	cl.SetText(data)
 }
 
-//func (cl *ContactListPanel)
-
 // NewContactListPanel creates a new contact list widget
 func NewContactListPanel(parent *ChatWindow, siggo *model.Siggo) *ContactListPanel {
 	c := &ContactListPanel{
@@ -264,6 +294,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 121:
 				w.YankMode()
 				return nil
+			case 73:
+				w.Compose()
+				return nil
 			}
 		// pass some events on to the conversation panel
 		case tcell.KeyPgUp:
@@ -305,4 +338,34 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	}
 
 	return w
+}
+
+// FancyCompose opens up EDITOR and composes a big fancy message.
+func FancyCompose() string {
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "siggo-compose-")
+	if err != nil {
+		log.Error("failed to create temp file for compose: %v", err)
+		return ""
+	}
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		log.Error("cannot compose: no EDITOR set in environment")
+		return ""
+	}
+	fname := tmpFile.Name()
+	defer os.Remove(fname)
+	cmd := exec.Command(editor, fname)
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	if err = cmd.Run(); err != nil {
+		log.Error("failed to start editor: %v", err)
+		return ""
+	}
+	b, err := ioutil.ReadFile(fname)
+	if err != nil {
+		log.Error("failed to read temp file: %v", err)
+		return ""
+	}
+	return string(b)
 }
