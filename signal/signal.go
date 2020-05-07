@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"os/user"
 	"strings"
+	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -123,7 +125,6 @@ func (s *Signal) Receive() error {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		wire := scanner.Bytes()
-		//fmt.Printf("%s\n", wire) // TODO: log to file?
 		err = s.ProcessWire(wire)
 		if err != nil {
 			return err
@@ -132,17 +133,46 @@ func (s *Signal) Receive() error {
 	return err
 }
 
-// ReceiveUntil receives contiuously until it receives a stop signal
-func (s *Signal) ReceiveUntil(done chan struct{}) {
+// ReceiveForever receives contiuously until it receives a stop signal
+func (s *Signal) ReceiveForever() {
 	go func() {
-		// better to select with timeout?
-		for len(done) == 0 {
-			err := s.Receive()
+		for {
+			log.Infof("starting dbus daemon...")
+			err := s.Daemon()
 			if err != nil {
-				log.Printf("receive failed: %v", err)
+				log.Error(fmt.Errorf("daemon failed to start... restarting in 5 seconds..."))
+				time.Sleep(5 * time.Second)
 			}
 		}
 	}()
+}
+
+// Daemon starts the dbus daemon
+func (s *Signal) Daemon() error {
+	cmd := exec.Command("signal-cli", "-u", s.uname, "daemon", "--json")
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Pdeathsig: syscall.SIGKILL,
+	}
+	outReader, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(outReader)
+	log.Infof("scanning stdout")
+	for scanner.Scan() {
+		wire := scanner.Bytes()
+		log.Printf("wire (length %d): %s", len(wire), wire)
+		err = s.ProcessWire(wire)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Send transmits a message to the specified number
@@ -153,6 +183,17 @@ func (s *Signal) Send(dest, msg string) error {
 		dest = fmt.Sprintf("+%s", dest)
 	}
 	_, err := s.Exec("-u", s.uname, "send", dest, "-m", msg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Signal) SendDbus(dest, msg string) error {
+	if !strings.HasPrefix(dest, "+") {
+		dest = fmt.Sprintf("+%s", dest)
+	}
+	_, err := s.Exec("--dbus", "send", dest, "-m", msg)
 	if err != nil {
 		return err
 	}

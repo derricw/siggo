@@ -36,10 +36,7 @@ var receiveCmd = &cobra.Command{
 		s.NewInfo = func(conv *model.Conversation) {
 			log.Printf("From: %v | Conv: \n%s", conv.Contact, conv.String())
 		}
-		err := s.Receive()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Printf("%+v", s)
+		s.ReceiveForever()
+		<-make(chan struct{})
 	},
 }

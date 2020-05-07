@@ -154,8 +154,9 @@ func NewConversation(contact *Contact) *Conversation {
 
 type SignalAPI interface {
 	Send(string, string) error
+	SendDbus(string, string) error
 	Receive() error
-	ReceiveUntil(chan struct{})
+	ReceiveForever()
 	OnReceived(signal.ReceivedCallback)
 	OnReceipt(signal.ReceiptCallback)
 	OnSent(signal.SentCallback)
@@ -186,12 +187,13 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 		log.Printf("new conversation for contact: %v", contact)
 		conv = s.newConversation(contact)
 	}
+	conv.CaughtUp()
 	conv.AddMessage(message)
 	s.NewInfo(conv)
 	// finally send the message
-	err := s.signal.Send(contact.Number, msg)
+	err := s.signal.SendDbus(contact.Number, msg)
 	if err != nil {
-		message.Content = fmt.Sprintf("FAILED TO SEND: %s", message.Content)
+		message.Content = fmt.Sprintf("FAILED TO SEND: %s ERROR: %v", message.Content, err)
 		s.NewInfo(conv)
 		return err
 	}
@@ -217,9 +219,9 @@ func (s *Siggo) Receive() error {
 	return s.signal.Receive()
 }
 
-// ReceiveUntil
-func (s *Siggo) ReceiveUntil(done chan struct{}) {
-	s.signal.ReceiveUntil(done)
+// ReceiveForever
+func (s *Siggo) ReceiveForever() {
+	s.signal.ReceiveForever()
 }
 
 func (s *Siggo) onSent(msg *signal.Message) error {

@@ -44,7 +44,7 @@ var uiCmd = &cobra.Command{
 
 		s := model.NewSiggo(signalAPI, cfg)
 
-		s.ReceiveUntil(make(chan struct{}))
+		s.ReceiveForever()
 		//tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
 		app := tview.NewApplication()
 		chatWindow := ui.NewChatWindow(s, app)

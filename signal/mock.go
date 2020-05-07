@@ -52,6 +52,10 @@ func (ms *MockSignal) Send(dest, msg string) error {
 	return nil
 }
 
+func (ms *MockSignal) SendDbus(dest, msg string) error {
+	return ms.Send(dest, msg)
+}
+
 func (ms *MockSignal) Receive() error {
 	r := bytes.NewReader(ms.exampleData)
 	scanner := bufio.NewScanner(r)
@@ -66,13 +70,10 @@ func (ms *MockSignal) Receive() error {
 	return nil
 }
 
-func (ms *MockSignal) ReceiveUntil(done chan struct{}) {
+func (ms *MockSignal) ReceiveForever() {
 	go func() {
-		// better to select with timeout?
-		for len(done) == 0 {
-			ms.Receive()
-			time.Sleep(time.Second * 1)
-		}
+		ms.Receive()
+		time.Sleep(time.Second * 1)
 	}()
 }
 
