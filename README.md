@@ -44,7 +44,12 @@ This way you can test without sending yourself messages.
 
 ### Roadmap
 
+Here is a list of things that are currently broken.
+* Read receipts for outgoing messages
+
 Here is a list of features I'd like to add.
+* get rid of the `ui` command and make that the default behavior of the binary
+* saving messages between sessions (should be optional)
 * Attachments support
 * gui configuration
 * let user re-sort contact list (for example alphabetically)
@@ -53,4 +58,5 @@ Here is a list of features I'd like to add.
 * command to yank last posted web link to make sharing between converstaions easier
 * optional colors for each contact and their messages, like the electron app has
 * groups support
+* use dbus to send instead of signal-cli, to avoid having to spin up the JVM (might also fix the read receipt issue)
 
