@@ -8,5 +8,4 @@ require (
 	github.com/rivo/tview v0.0.0-20200329194346-7cc182c5846e
 	github.com/sirupsen/logrus v1.2.0
 	github.com/spf13/cobra v0.0.7
-	gitlab.com/domaintools/application/gathering/gathercli v0.0.0-20200327173835-b25afd5ff9ad
 )

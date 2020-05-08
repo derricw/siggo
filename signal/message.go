@@ -25,7 +25,7 @@ type SentMessage struct {
 	Timestamp        int64         `json:"timestamp"`
 	Message          string        `json:"message"`
 	ExpiresInSeconds int64         `json:"expiresInSeconds"`
-	Attachments      []interface{} `json:"attachments"`
+	Attachments      []*Attachment `json:"attachments"`
 	GroupInfo        interface{}   `json:"groupInfo"`
 	Destination      string        `json:"destination"`
 }
@@ -34,7 +34,7 @@ type DataMessage struct {
 	Timestamp        int64         `json:"timestamp"`
 	Message          string        `json:"message"`
 	ExpiresInSeconds int64         `json:"expiresInSeconds"`
-	Attachments      []interface{} `json:"attachments"`
+	Attachments      []*Attachment `json:"attachments"`
 	GroupInfo        interface{}   `json:"groupInfo"`
 }
 

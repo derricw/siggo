@@ -59,4 +59,4 @@ Here is a list of features I'd like to add.
 * optional colors for each contact and their messages, like the electron app has
 * groups support
 * use dbus to send instead of signal-cli, to avoid having to spin up the JVM (might also fix the read receipt issue)
-
+* there is still some data that i'm dropping on the floor

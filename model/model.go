@@ -71,6 +71,7 @@ type Message struct {
 	IsDelivered bool
 	IsRead      bool
 	FromSelf    bool
+	Attachments *[]signal.Attachment
 }
 
 func (m *Message) String() string {
@@ -246,6 +247,7 @@ func (s *Siggo) onSent(msg *signal.Message) error {
 		IsDelivered: false,
 		IsRead:      false,
 		FromSelf:    true,
+		Attachments: nil,
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
