@@ -76,10 +76,9 @@ type Message struct {
 
 func (m *Message) String() string {
 	var fromStr = m.From
-	if len(m.From) > 12 {
-		fromStr = m.From[:12]
-	}
-	data := fmt.Sprintf("%s|%s%s| %12v: %s\n",
+	fromLen := len(m.From)
+	template := "%s|%s%s| %" + fmt.Sprintf("%dv", fromLen) + ": %s\n"
+	data := fmt.Sprintf(template,
 		// lets come up with a way to avoid the *1000000
 		// Magical Ref Data: Mon Jan 2 15:04:05 MST 2006
 		time.Unix(0, m.Timestamp*1000000).Format("2006-01-02 15:04:05"),

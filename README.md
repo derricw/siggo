@@ -31,12 +31,12 @@ bin/siggo -u +<yourphonenumber> ui
 
 ### Keybinds
 
-`i` - Insert Mode
-`I` - Compose
-`y` - Yank Mode
-`ESC` - Normal Mode
-`CTRL+L` - (insert mode) Clear input field
-`ALT+Q` - Quit
+* `i` - Insert Mode
+* `I` - Compose
+* `y` - Yank Mode
+* `ESC` - Normal Mode
+* `CTRL+L` - (insert mode) Clear input field
+* `ALT+Q` - Quit
 
 ### Development
 
