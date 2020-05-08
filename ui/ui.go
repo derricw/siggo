@@ -165,6 +165,16 @@ func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 		case tcell.KeyEnter:
 			s.Send()
 			return nil
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 113: // q
+				if event.Modifiers() == 4 { // ALT+q
+					s.parent.Quit()
+				}
+			}
+		case tcell.KeyCtrlL:
+			s.SetText("")
+			return nil
 		}
 		return event
 	})
@@ -282,20 +292,26 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 		switch event.Key() {
 		case tcell.KeyRune:
 			switch event.Rune() {
-			case 106:
+			case 106: // j
 				w.ContactDown()
 				return nil
-			case 107:
+			case 107: // k
 				w.ContactUp()
 				return nil
-			case 105:
-				w.InsertMode()
+			case 105: // i
+				if event.Modifiers() == 4 { // ALT+i
+					w.Compose()
+				} else {
+					w.InsertMode()
+				}
+				return nil
+			case 113: // q
+				if event.Modifiers() == 4 { // ALT+q
+					w.Quit()
+				}
 				return nil
 			case 121:
-				w.YankMode()
-				return nil
-			case 73:
-				w.Compose()
+				w.YankMode() // y
 				return nil
 			}
 		// pass some events on to the conversation panel

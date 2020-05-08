@@ -46,3 +46,10 @@ type ReceiptMessage struct {
 	IsRead     bool    `json:"isRead"`
 	Timestamps []int64 `json:"timestamps"`
 }
+
+type Attachment struct {
+	ContentType string `json:"contentType"`
+	Filename    string `json:"filename"`
+	ID          string `json:"id"`
+	Size        int    `json:"size"`
+}
