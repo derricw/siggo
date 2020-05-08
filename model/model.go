@@ -71,7 +71,7 @@ type Message struct {
 	IsDelivered bool
 	IsRead      bool
 	FromSelf    bool
-	Attachments *[]signal.Attachment
+	Attachments []*signal.Attachment
 }
 
 func (m *Message) String() string {
@@ -79,9 +79,9 @@ func (m *Message) String() string {
 	if len(m.From) > 12 {
 		fromStr = m.From[:12]
 	}
-	// Magical Ref Data: Mon Jan 2 15:04:05 MST 2006
-	data := fmt.Sprintf("%s|%s%s %12v: %s\n",
+	data := fmt.Sprintf("%s|%s%s| %12v: %s\n",
 		// lets come up with a way to avoid the *1000000
+		// Magical Ref Data: Mon Jan 2 15:04:05 MST 2006
 		time.Unix(0, m.Timestamp*1000000).Format("2006-01-02 15:04:05"),
 		DeliveryStatus[m.IsDelivered],
 		ReadStatus[m.IsRead],
@@ -89,9 +89,15 @@ func (m *Message) String() string {
 		m.Content,
 	)
 	if m.FromSelf == true {
+		// dim messages from self (for now, until we support color for contacts)
 		data = "[::d]" + data + "[::-]"
 	} else if m.IsRead == false {
+		// bold messages that haven't been read
 		data = "[::b]" + data + "[::-]"
+	}
+	for _, a := range m.Attachments {
+		aMsg := fmt.Sprintf(" 📎| %s | %s | %dB\n", a.Filename, a.ContentType, a.Size)
+		data = fmt.Sprintf("%s%s", data, aMsg)
 	}
 	return data
 }
@@ -247,7 +253,7 @@ func (s *Siggo) onSent(msg *signal.Message) error {
 		IsDelivered: false,
 		IsRead:      false,
 		FromSelf:    true,
-		Attachments: nil,
+		Attachments: sentMsg.Attachments,
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
@@ -288,6 +294,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 		Timestamp:   receiveMsg.Timestamp,
 		IsDelivered: true,
 		IsRead:      false,
+		Attachments: receiveMsg.Attachments,
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
