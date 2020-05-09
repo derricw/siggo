@@ -76,8 +76,7 @@ type Message struct {
 
 func (m *Message) String() string {
 	var fromStr = m.From
-	fromLen := len(m.From)
-	template := "%s|%s%s| %" + fmt.Sprintf("%dv", fromLen) + ": %s\n"
+	template := "%s|%s%s| %" + fmt.Sprintf("%dv", len(fromStr)) + ": %s\n"
 	data := fmt.Sprintf(template,
 		// lets come up with a way to avoid the *1000000
 		// Magical Ref Data: Mon Jan 2 15:04:05 MST 2006

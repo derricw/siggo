@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"os/user"
 	"strings"
 	"syscall"
 	"time"
 
+	qr "github.com/mdp/qrterminal/v3"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -94,10 +96,6 @@ func (s *Signal) Exec(args ...string) ([]byte, error) {
 	}
 	return out.Bytes(), nil
 }
-
-// Link a device
-// not implemented but wouldn't it be cool
-func (s *Signal) Link() {}
 
 // Version returns the current version of signal-cli
 func (s *Signal) Version() (string, error) {
@@ -198,6 +196,26 @@ func (s *Signal) SendDbus(dest, msg string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Signal) Link(deviceName string) error {
+	cmd := exec.Command("signal-cli", "link", "-n", deviceName)
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	r := bufio.NewReader(out)
+	line, _, err := r.ReadLine()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("link text: %s\n", line)
+	qr.Generate(fmt.Sprintf("%s", line), qr.L, os.Stdout)
+	return cmd.Wait()
 }
 
 func (s *Signal) GetUserData() (*SignalUserData, error) {
