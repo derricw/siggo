@@ -33,6 +33,7 @@ type ChatWindow struct {
 	sendPanel         *SendPanel
 	contactsPanel     *ContactListPanel
 	conversationPanel *ConversationPanel
+	searchPanel       tview.Primitive
 	app               *tview.Application
 }
 
@@ -56,6 +57,22 @@ func (c *ChatWindow) NormalMode() {
 	c.conversationPanel.SetBorderColor(tcell.ColorWhite)
 	c.sendPanel.SetBorderColor(tcell.ColorWhite)
 	c.mode = NormalMode
+}
+
+func (c *ChatWindow) ShowContactSearch() {
+	log.Info("SHOWING CONTACT SEARCH")
+	p := NewContactSearch(c)
+	c.searchPanel = p
+	c.SetRows(0, 3, p.maxHeight)
+	c.AddItem(p, 2, 0, 1, 2, 0, 0, false)
+	c.app.SetFocus(p)
+}
+
+func (c *ChatWindow) HideSearch() {
+	log.Info("HIDING SEARCH")
+	c.RemoveItem(c.searchPanel)
+	c.SetRows(0, 3)
+	c.app.SetFocus(c)
 }
 
 // TODO: remove code duplication with ContactDown()
@@ -272,6 +289,58 @@ func NewConversationPanel(siggo *model.Siggo) *ConversationPanel {
 	return c
 }
 
+type ContactSearchPanel struct {
+	*tview.Grid
+	list      *tview.TextView
+	input     *SearchInput
+	parent    *ChatWindow
+	maxHeight int
+}
+
+func (p *ContactSearchPanel) Close() {
+	p.parent.HideSearch()
+}
+
+func NewContactSearch(parent *ChatWindow) *ContactSearchPanel {
+	maxHeight := 10
+	p := &ContactSearchPanel{
+		Grid:      tview.NewGrid().SetRows(maxHeight-3, 1),
+		list:      tview.NewTextView(),
+		parent:    parent,
+		maxHeight: maxHeight,
+	}
+	p.input = NewSearchInput(p)
+	p.AddItem(p.list, 0, 0, 1, 1, 0, 0, false)
+	p.AddItem(p.input, 1, 0, 1, 1, 0, 0, true)
+	p.SetBorder(true)
+	p.SetTitle("search contacts...")
+	return p
+}
+
+type SearchInput struct {
+	*tview.InputField
+	parent *ContactSearchPanel
+}
+
+func NewSearchInput(parent *ContactSearchPanel) *SearchInput {
+	si := &SearchInput{
+		InputField: tview.NewInputField(),
+		parent:     parent,
+	}
+	si.SetLabel("> ")
+	si.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Setup keys
+		log.Printf("Key Event <SEARCH>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyESC:
+			si.parent.Close()
+			return nil
+		}
+		return event
+	})
+	return si
+}
+
 func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	layout := tview.NewGrid().
 		SetRows(0, 3).
@@ -329,6 +398,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			return nil
 		case tcell.KeyESC:
 			w.NormalMode()
+			return nil
+		case tcell.KeyCtrlT:
+			w.ShowContactSearch()
 			return nil
 		}
 		return event
