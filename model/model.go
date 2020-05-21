@@ -158,8 +158,8 @@ func NewConversation(contact *Contact) *Conversation {
 }
 
 type SignalAPI interface {
-	Send(string, string) error
-	SendDbus(string, string) error
+	Send(string, string) (int64, error)
+	SendDbus(string, string) (int64, error)
 	Receive() error
 	ReceiveForever()
 	OnReceived(signal.ReceivedCallback)
@@ -196,12 +196,14 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 	conv.AddMessage(message)
 	s.NewInfo(conv)
 	// finally send the message
-	err := s.signal.SendDbus(contact.Number, msg)
+	ID, err := s.signal.SendDbus(contact.Number, msg)
 	if err != nil {
 		message.Content = fmt.Sprintf("FAILED TO SEND: %s ERROR: %v", message.Content, err)
 		s.NewInfo(conv)
 		return err
 	}
+	// use the official timestamp on success
+	message.Timestamp = ID
 	return nil
 }
 

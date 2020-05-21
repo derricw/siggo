@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"log"
-
 	"github.com/derricw/siggo/signal"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -18,9 +17,10 @@ var sendCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		sig := signal.NewSignal(User)
-		err := sig.Send(args[0], args[1])
+		ID, err := sig.Send(args[0], args[1])
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Infof("message sent with ID: %d", ID)
 	},
 }

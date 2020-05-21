@@ -34,7 +34,7 @@ type MockSignal struct {
 	userNumber  string
 }
 
-func (ms *MockSignal) Send(dest, msg string) error {
+func (ms *MockSignal) Send(dest, msg string) (int64, error) {
 	// send a fake message, just puts in on the "wire"
 	timestamp := time.Now().Unix()
 	fakeWire := fakeSendReceipt
@@ -46,13 +46,13 @@ func (ms *MockSignal) Send(dest, msg string) error {
 	log.Printf("%v", fakeWire)
 	b, err := json.Marshal(fakeWire)
 	if err != nil {
-		return fmt.Errorf("failed to marshal send receipt: %v", err)
+		return 0, fmt.Errorf("failed to marshal send receipt: %v", err)
 	}
 	ms.exampleData = append(ms.exampleData, b...)
-	return nil
+	return timestamp, nil
 }
 
-func (ms *MockSignal) SendDbus(dest, msg string) error {
+func (ms *MockSignal) SendDbus(dest, msg string) (int64, error) {
 	return ms.Send(dest, msg)
 }
 

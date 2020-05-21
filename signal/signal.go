@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -176,26 +177,36 @@ func (s *Signal) Daemon() error {
 // Send transmits a message to the specified number
 // Destination is a phone number with country code.
 // signal-cli likes to have a `+` before the number, so we add one if it isn't there.
-func (s *Signal) Send(dest, msg string) error {
+func (s *Signal) Send(dest, msg string) (int64, error) {
 	if !strings.HasPrefix(dest, "+") {
 		dest = fmt.Sprintf("+%s", dest)
 	}
-	_, err := s.Exec("-u", s.uname, "send", dest, "-m", msg)
+	cmd := exec.Command("signal-cli", "-u", s.uname, "send", dest, "-m", msg)
+	out, err := cmd.Output()
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	ID, err := strconv.Atoi(string(out[:len(out)-1])) //strip newline
+	if err != nil {
+		return 0, err
+	}
+	return int64(ID), nil
 }
 
-func (s *Signal) SendDbus(dest, msg string) error {
+func (s *Signal) SendDbus(dest, msg string) (int64, error) {
 	if !strings.HasPrefix(dest, "+") {
 		dest = fmt.Sprintf("+%s", dest)
 	}
-	_, err := s.Exec("--dbus", "send", dest, "-m", msg)
+	cmd := exec.Command("signal-cli", "--dbus", "send", dest, "-m", msg)
+	out, err := cmd.Output()
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	ID, err := strconv.Atoi(string(out[:len(out)-1])) //strip newline
+	if err != nil {
+		return 0, err
+	}
+	return int64(ID), nil
 }
 
 func (s *Signal) Link(deviceName string) error {

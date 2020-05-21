@@ -289,7 +289,7 @@ func NewConversationPanel(siggo *model.Siggo) *ConversationPanel {
 	return c
 }
 
-type ContactSearchPanel struct {
+type SearchPanel struct {
 	*tview.Grid
 	list      *tview.TextView
 	input     *SearchInput
@@ -297,18 +297,19 @@ type ContactSearchPanel struct {
 	maxHeight int
 }
 
-func (p *ContactSearchPanel) Close() {
+func (p *SearchPanel) Close() {
 	p.parent.HideSearch()
 }
 
-func NewContactSearch(parent *ChatWindow) *ContactSearchPanel {
+func NewContactSearch(parent *ChatWindow) *SearchPanel {
 	maxHeight := 10
-	p := &ContactSearchPanel{
+	p := &SearchPanel{
 		Grid:      tview.NewGrid().SetRows(maxHeight-3, 1),
 		list:      tview.NewTextView(),
 		parent:    parent,
 		maxHeight: maxHeight,
 	}
+	//contactList := parent.siggo.Contacts().SortedByName()
 	p.input = NewSearchInput(p)
 	p.AddItem(p.list, 0, 0, 1, 1, 0, 0, false)
 	p.AddItem(p.input, 1, 0, 1, 1, 0, 0, true)
@@ -319,10 +320,10 @@ func NewContactSearch(parent *ChatWindow) *ContactSearchPanel {
 
 type SearchInput struct {
 	*tview.InputField
-	parent *ContactSearchPanel
+	parent *SearchPanel
 }
 
-func NewSearchInput(parent *ContactSearchPanel) *SearchInput {
+func NewSearchInput(parent *SearchPanel) *SearchInput {
 	si := &SearchInput{
 		InputField: tview.NewInputField(),
 		parent:     parent,
