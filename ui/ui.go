@@ -121,7 +121,7 @@ func (c *ChatWindow) Compose() {
 	if msg != "" {
 		contact := c.currentContact
 		go c.siggo.Send(msg, contact)
-		log.Infof("sent message: %s to contact: %s", msg, contact)
+		log.Infof("sending message: %s to contact: %s", msg, contact)
 	}
 }
 

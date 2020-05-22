@@ -192,9 +192,6 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 		log.Printf("new conversation for contact: %v", contact)
 		conv = s.newConversation(contact)
 	}
-	conv.CaughtUp()
-	conv.AddMessage(message)
-	s.NewInfo(conv)
 	// finally send the message
 	ID, err := s.signal.SendDbus(contact.Number, msg)
 	if err != nil {
@@ -204,6 +201,10 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 	}
 	// use the official timestamp on success
 	message.Timestamp = ID
+	conv.CaughtUp()
+	conv.AddMessage(message)
+	s.NewInfo(conv)
+	log.Infof("successfully sent message %s with timestamp: %d", message.Content, message.Timestamp)
 	return nil
 }
 
