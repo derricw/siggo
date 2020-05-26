@@ -120,9 +120,25 @@ func (c *ChatWindow) Compose() {
 	}
 	if msg != "" {
 		contact := c.currentContact
+		c.ShowTempSentMsg(msg)
 		go c.siggo.Send(msg, contact)
 		log.Infof("sending message: %s to contact: %s", msg, contact)
 	}
+}
+
+// ShowTempSentMsg shows a temporary message when a message is sent but before delivery.
+// Only displayed for the second or two after a message is sent.
+func (c *ChatWindow) ShowTempSentMsg(msg string) {
+	tmpMsg := &model.Message{
+		Content:     msg,
+		From:        " ~ ",
+		Timestamp:   time.Now().Unix() * 1000,
+		IsDelivered: false,
+		IsRead:      false,
+		FromSelf:    true,
+	}
+	// write directly to conv panel but don't add to conversation
+	c.conversationPanel.Write([]byte(tmpMsg.String()))
 }
 
 // Quit shuts down gracefully
@@ -154,6 +170,7 @@ type SendPanel struct {
 func (s *SendPanel) Send() {
 	msg := s.GetText()
 	contact := s.parent.currentContact
+	s.parent.ShowTempSentMsg(msg)
 	go s.siggo.Send(msg, contact)
 	log.Infof("sent message: %s to contact: %s", msg, contact)
 	s.SetText("")
