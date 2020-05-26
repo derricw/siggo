@@ -189,7 +189,7 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 	}
 	conv, ok := s.conversations[contact]
 	if !ok {
-		log.Printf("new conversation for contact: %v", contact)
+		log.Infof("new conversation for contact: %v", contact)
 		conv = s.newConversation(contact)
 	}
 	// finally send the message
@@ -244,7 +244,7 @@ func (s *Siggo) onSent(msg *signal.Message) error {
 		c = &Contact{
 			Number: contactNumber,
 		}
-		log.Printf("New contact: %v", c)
+		log.Infof("New contact: %v", c)
 		s.contacts[c.Number] = c
 	}
 	message := &Message{
@@ -258,7 +258,7 @@ func (s *Siggo) onSent(msg *signal.Message) error {
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
-		log.Printf("new conversation for contact: %v", c)
+		log.Infof("new conversation for contact: %v", c)
 		conv = s.newConversation(c)
 	}
 	conv.AddMessage(message)
@@ -282,7 +282,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 		c = &Contact{
 			Number: contactNumber,
 		}
-		log.Printf("New contact: %v", c)
+		log.Infof("New contact: %v", c)
 		s.contacts[c.Number] = c
 	} else if c.Name == "" {
 		fromStr = contactNumber
@@ -299,7 +299,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
-		log.Printf("new conversation for contact: %v", c)
+		log.Infof("new conversation for contact: %v", c)
 		conv = s.newConversation(c)
 	}
 	conv.AddMessage(message)
@@ -406,7 +406,7 @@ func GetContacts(userNumber string) ContactList {
 func GetConversations(userNumber string, contacts ContactList) map[*Contact]*Conversation {
 	conversations := make(map[*Contact]*Conversation)
 	for _, contact := range contacts {
-		log.Printf("Adding conversation for: %+v\n", contact)
+		log.Debugf("Adding conversation for: %+v\n", contact)
 		conv := NewConversation(contact)
 		conversations[contact] = conv
 	}

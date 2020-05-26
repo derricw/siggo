@@ -38,20 +38,20 @@ type ChatWindow struct {
 }
 
 func (c *ChatWindow) InsertMode() {
-	log.Info("INSERT MODE")
+	log.Debug("INSERT MODE")
 	c.app.SetFocus(c.sendPanel)
 	c.sendPanel.SetBorderColor(tcell.ColorOrange)
 	c.mode = InsertMode
 }
 
 func (c *ChatWindow) YankMode() {
-	log.Info("YANK MODE")
+	log.Debug("YANK MODE")
 	c.conversationPanel.SetBorderColor(tcell.ColorOrange)
 	c.mode = YankMode
 }
 
 func (c *ChatWindow) NormalMode() {
-	log.Info("NORMAL MODE")
+	log.Debug("NORMAL MODE")
 	c.app.SetFocus(c)
 	// clear our highlights
 	c.conversationPanel.SetBorderColor(tcell.ColorWhite)
@@ -60,7 +60,7 @@ func (c *ChatWindow) NormalMode() {
 }
 
 func (c *ChatWindow) ShowContactSearch() {
-	log.Info("SHOWING CONTACT SEARCH")
+	log.Debug("SHOWING CONTACT SEARCH")
 	p := NewContactSearch(c)
 	c.searchPanel = p
 	c.SetRows(0, 3, p.maxHeight)
@@ -69,7 +69,7 @@ func (c *ChatWindow) ShowContactSearch() {
 }
 
 func (c *ChatWindow) HideSearch() {
-	log.Info("HIDING SEARCH")
+	log.Debug("HIDING SEARCH")
 	c.RemoveItem(c.searchPanel)
 	c.SetRows(0, 3)
 	c.app.SetFocus(c)
@@ -77,7 +77,7 @@ func (c *ChatWindow) HideSearch() {
 
 // TODO: remove code duplication with ContactDown()
 func (c *ChatWindow) ContactUp() {
-	log.Info("PREVIOUS CONVERSATION")
+	log.Debug("PREVIOUS CONVERSATION")
 	prevContact := c.contactsPanel.Previous()
 	if prevContact != c.currentContact {
 		c.currentContact = prevContact
@@ -91,7 +91,7 @@ func (c *ChatWindow) ContactUp() {
 }
 
 func (c *ChatWindow) ContactDown() {
-	log.Info("NEXT CONVERSATION")
+	log.Debug("NEXT CONVERSATION")
 	nextContact := c.contactsPanel.Next()
 	if nextContact != c.currentContact {
 		c.currentContact = nextContact
@@ -239,13 +239,12 @@ func (cl *ContactListPanel) Previous() *model.Contact {
 
 func (cl *ContactListPanel) Update() {
 	data := ""
-	log.Printf("updating contact panel...")
+	log.Debug("updating contact panel...")
 	// this is dumb, we re-sort every update
 	// TODO: don't
 	sorted := cl.siggo.Contacts().SortedByIndex()
 	convs := cl.siggo.Conversations()
-	log.Printf("sorted contacts: %v", sorted)
-	//log.Printf("current contact idx: %v", cl.currentIndex)
+	log.Debug("sorted contacts: %v", sorted)
 	for i, c := range sorted {
 		id := ""
 		if c.Name != "" {
@@ -262,7 +261,6 @@ func (cl *ContactListPanel) Update() {
 		}
 		data += line
 	}
-	//log.Printf("data: %s", data)
 	cl.sortedContacts = sorted
 	cl.SetText(data)
 }
@@ -348,7 +346,7 @@ func NewSearchInput(parent *SearchPanel) *SearchInput {
 	si.SetLabel("> ")
 	si.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Setup keys
-		log.Printf("Key Event <SEARCH>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		log.Debug("Key Event <SEARCH>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
 		switch event.Key() {
 		case tcell.KeyESC:
 			si.parent.Close()
@@ -375,7 +373,7 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	w.sendPanel = NewSendPanel(w, siggo)
 	w.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Setup keys
-		log.Printf("Key Event <MAIN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		log.Debug("Key Event <MAIN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
 		switch event.Key() {
 		case tcell.KeyRune:
 			switch event.Rune() {

@@ -27,8 +27,10 @@ var uiCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		if Debug {
+			log.SetLevel(log.DebugLevel)
+		}
 		log.SetOutput(outputFile)
-
 		cfg := &model.Config{
 			UserNumber: User,
 			UserName:   "me",
