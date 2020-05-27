@@ -30,10 +30,11 @@ var DefaultConfig Config = Config{
 }
 
 type Config struct {
-	UserNumber            string `yaml:"user_number"`
-	UserName              string `yaml:"user_name"`
-	SaveMessages          bool   `yaml:"save_messages"`
-	MaxConversationLength int    `yaml:"max_coversation_length"`
+	UserNumber            string            `yaml:"user_number"`
+	UserName              string            `yaml:"user_name"`
+	SaveMessages          bool              `yaml:"save_messages"`
+	MaxConversationLength int               `yaml:"max_coversation_length"`
+	ContactColors         map[string]string `yaml:"contact_colors"`
 }
 
 // SaveAs writes the config to `path`

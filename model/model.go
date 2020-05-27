@@ -75,7 +75,7 @@ type Message struct {
 	Attachments []*signal.Attachment `json:"attachments"`
 }
 
-func (m *Message) String() string {
+func (m *Message) String(color string) string {
 	var fromStr = m.From
 	template := "%s|%s%s| %" + fmt.Sprintf("%dv", len(fromStr)) + ": %s\n"
 	data := fmt.Sprintf(template,
@@ -89,10 +89,12 @@ func (m *Message) String() string {
 	)
 	if m.FromSelf == true {
 		// dim messages from self (for now, until we support color for contacts)
-		data = "[::d]" + data + "[::-]"
+		data = fmt.Sprintf("[::d]%s[::-]", data)
 	} else if m.IsRead == false {
 		// bold messages that haven't been read
-		data = "[::b]" + data + "[::-]"
+		data = fmt.Sprintf("[%s::b]%s[-::-]", color, data)
+	} else if m.IsRead == true {
+		data = fmt.Sprintf("[%s::]%s[-::]", color, data)
 	}
 	for _, a := range m.Attachments {
 		aMsg := fmt.Sprintf(" 📎| %s | %s | %dB\n", a.Filename, a.ContentType, a.Size)
@@ -108,15 +110,20 @@ type Conversation struct {
 	HasNewMessage bool
 	// hasNewData tracks whether new data has been added
 	// since the last save to disk
+	color      string
 	hasNewData bool
 }
 
 func (c *Conversation) String() string {
 	out := ""
 	for _, k := range c.MessageOrder {
-		out += c.Messages[k].String()
+		out += c.Messages[k].String(c.color)
 	}
 	return out
+}
+
+func (c *Conversation) Color() string {
+	return c.color
 }
 
 func (c *Conversation) AddMessage(message *Message) {
@@ -490,13 +497,17 @@ func (s *Siggo) getConversations() map[*Contact]*Conversation {
 	for _, contact := range s.contacts {
 		log.Debugf("Adding conversation for: %+v\n", contact)
 		conv := NewConversation(contact)
-		// check if we have a conversation file for this user
+		// check if we have a conversation file for this contact
 		if s.config.SaveMessages {
 			convPath := filepath.Join(ConversationFolder(), contact.Number)
 			err := conv.Load(convPath) // if we fail to load, oh well
 			if err == nil {
 				log.Infof("loaded conversation from: %s", contact.Name)
 			}
+		}
+		// check if we have a color for this contact
+		if color, ok := s.config.ContactColors[contact.Name]; ok {
+			conv.color = color
 		}
 		conv.CaughtUp()
 		conversations[contact] = conv

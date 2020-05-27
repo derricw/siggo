@@ -138,7 +138,8 @@ func (c *ChatWindow) ShowTempSentMsg(msg string) {
 		FromSelf:    true,
 	}
 	// write directly to conv panel but don't add to conversation
-	c.conversationPanel.Write([]byte(tmpMsg.String()))
+	// no color since its from us
+	c.conversationPanel.Write([]byte(tmpMsg.String("")))
 }
 
 // Quit shuts down gracefully
@@ -254,11 +255,14 @@ func (cl *ContactListPanel) Update() {
 			id = c.Number
 		}
 		line := fmt.Sprintf("%s\n", id)
+		color := convs[c].Color()
 		if cl.currentIndex == i {
-			line = "[::r]" + line + "[::-]"
+			line = fmt.Sprintf("[%s::r]%s[-::-]", color, line)
 			cl.currentIndex = i
 		} else if convs[c].HasNewMessage {
-			line = "[::b]*" + line + "[::-]"
+			line = fmt.Sprintf("[%s::b]*%s[-::-]", color, line)
+		} else {
+			line = fmt.Sprintf("[%s::]%s[-::]", color, line)
 		}
 		data += line
 	}

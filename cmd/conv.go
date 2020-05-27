@@ -16,9 +16,10 @@ func init() {
 
 var convCmd = &cobra.Command{
 	Use:   "conv <contact>",
-	Short: "prints the conversation for a given contact",
+	Short: "prints the saved conversation for a given contact",
 	Long: `example:
-	$ siggo conv +1234567890`,
+	$ siggo conv +1234567890
+	$ siggo conv "John Smith"`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := model.GetConfig()

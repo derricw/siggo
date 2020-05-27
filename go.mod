@@ -8,6 +8,7 @@ require (
 	github.com/rivo/tview v0.0.0-20200329194346-7cc182c5846e
 	github.com/sirupsen/logrus v1.2.0
 	github.com/spf13/cobra v0.0.7
-	github.com/stretchr/testify v1.2.2
-	gopkg.in/yaml.v2 v2.2.2
+	github.com/stretchr/testify v1.5.1
+	gitlab.com/domaintools/application/gathering/gathercli v0.0.0-20200512171528-364bbdfaa1ff // indirect
+	gopkg.in/yaml.v2 v2.2.8
 )
