@@ -3,6 +3,8 @@ package cmd
 import (
 	"io/ioutil"
 	"os"
+	//ossig "os/signal"
+	//"syscall"
 
 	//"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -55,8 +57,12 @@ var uiCmd = &cobra.Command{
 		//tview.Styles.PrimitiveBackgroundColor = tcell.ColorDefault
 		app := tview.NewApplication()
 		chatWindow := ui.NewChatWindow(s, app)
+
+		// finally, start the tview app
 		if err := app.SetRoot(chatWindow, true).SetFocus(chatWindow).Run(); err != nil {
 			panic(err)
 		}
+		// clean up when we're done
+		chatWindow.Quit()
 	},
 }
