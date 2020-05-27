@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/derricw/siggo/model"
 	"github.com/derricw/siggo/signal"
 	log "github.com/sirupsen/logrus"
@@ -15,18 +17,20 @@ var contactsCmd = &cobra.Command{
 	Use:   "contacts",
 	Short: "list contacts for a given user",
 	Long: `example:
-	$ siggo contacts +1234567890`,
-	Args: cobra.ExactArgs(1),
+	$ siggo contacts`,
 	Run: func(cmd *cobra.Command, args []string) {
-		user := args[0]
-
-		cfg := &model.Config{
-			UserNumber: user,
+		cfg, err := model.GetConfig()
+		if err != nil {
+			log.Fatal("failed to read config @ %s", model.DefaultConfigPath())
 		}
-
-		signalAPI := signal.NewSignal(user)
+		if cfg.UserNumber == "" {
+			log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
+		}
+		signalAPI := signal.NewSignal(User)
 		s := model.NewSiggo(signalAPI, cfg)
 
-		log.Info("%s", s.Contacts())
+		for _, c := range s.Contacts().SortedByName() {
+			fmt.Printf("%s - %s\n", c.Name, c.Number)
+		}
 	},
 }

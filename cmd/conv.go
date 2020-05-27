@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/derricw/siggo/model"
@@ -10,13 +11,15 @@ import (
 )
 
 func init() {
-	rootCmd.AddCommand(receiveCmd)
+	rootCmd.AddCommand(convCmd)
 }
 
-var receiveCmd = &cobra.Command{
-	Use:   "receive",
-	Short: "receive all outstanding messages",
-	Long:  ``,
+var convCmd = &cobra.Command{
+	Use:   "conv",
+	Short: "prints the conversation for a given contact",
+	Long: `example:
+	$ siggo conv +1234567890`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := model.GetConfig()
 		if err != nil {
@@ -25,6 +28,7 @@ var receiveCmd = &cobra.Command{
 		if cfg.UserNumber == "" {
 			log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
 		}
+
 		var signalAPI model.SignalAPI = signal.NewSignal(cfg.UserNumber)
 		if Mock != "" {
 			b, err := ioutil.ReadFile(Mock)
@@ -33,13 +37,27 @@ var receiveCmd = &cobra.Command{
 			}
 			signalAPI = signal.NewMockSignal(User, b)
 		}
-
 		s := model.NewSiggo(signalAPI, cfg)
-
-		s.NewInfo = func(conv *model.Conversation) {
-			log.Printf("From: %v | Conv: \n%s", conv.Contact, conv.String())
+		if Mock != "" {
+			s.Receive()
 		}
-		s.ReceiveForever()
-		<-make(chan struct{})
+
+		var conv *model.Conversation
+		if contact, ok := s.Contacts()[args[0]]; ok {
+			// arg is a number, get conversation directly
+			conv = s.Conversations()[contact]
+		} else {
+			// maybe a name, have to scan list
+			for _, contact := range s.Contacts() {
+				if contact.Name == args[0] {
+					conv = s.Conversations()[contact]
+				}
+			}
+		}
+		if conv != nil {
+			fmt.Printf("%s", conv.String())
+		} else {
+			log.Fatalf("failed to find conversation")
+		}
 	},
 }

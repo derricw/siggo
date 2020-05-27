@@ -1,8 +1,11 @@
 package model
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -20,18 +23,16 @@ var ReadStatus map[bool]string = map[bool]string{
 	false: "X",
 }
 
-type Config struct {
-	UserName   string
-	UserNumber string
-}
+// PhoneNumber is an alias for string not derived
+type PhoneNumber = string
 
 type Contact struct {
-	Number string
+	Number PhoneNumber
 	Name   string
 	Index  int
 }
 
-type ContactList map[string]*Contact
+type ContactList map[PhoneNumber]*Contact
 
 // List returns a list of contacts (in random order)
 func (cl ContactList) List() []*Contact {
@@ -65,13 +66,13 @@ func (cl ContactList) SortedByIndex() []*Contact {
 }
 
 type Message struct {
-	Content     string
-	From        string
-	Timestamp   int64
-	IsDelivered bool
-	IsRead      bool
-	FromSelf    bool
-	Attachments []*signal.Attachment
+	Content     string               `json:"content"`
+	From        string               `json:"from"`
+	Timestamp   int64                `json:"timestamp"`
+	IsDelivered bool                 `json:"is_delivered"`
+	IsRead      bool                 `json:"is_read"`
+	FromSelf    bool                 `json:"from_self"`
+	Attachments []*signal.Attachment `json:"attachments"`
 }
 
 func (m *Message) String() string {
@@ -146,6 +147,52 @@ func (c *Conversation) CaughtUp() {
 		c.Messages[c.MessageOrder[i]].IsRead = true
 	}
 	c.HasNewMessage = false
+}
+
+// SaveAs writes the last `maxMessages` to `path`.
+func (c *Conversation) SaveAs(path string) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	for _, msgID := range c.MessageOrder {
+		msg := c.Messages[msgID]
+		b, err := json.Marshal(msg)
+		if err != nil {
+			return err
+		}
+		f.Write(b)
+		f.Write([]byte{'\n'})
+	}
+	return nil
+}
+
+func (c *Conversation) Save() error {
+	folder := ConversationFolder()
+	err := os.MkdirAll(folder, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(ConversationFolder(), c.Contact.Number)
+	return c.SaveAs(path)
+}
+
+// Load will load a conversation saved @ `path`
+func (c *Conversation) Load(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		msg := &Message{}
+		err := json.Unmarshal(s.Bytes(), msg)
+		if err != nil {
+			return err
+		}
+		c.AddMessage(msg)
+	}
+	return nil
 }
 
 func NewConversation(contact *Contact) *Conversation {
@@ -358,6 +405,9 @@ func (s *Siggo) Contacts() ContactList {
 // NewSiggo creates a new model
 func NewSiggo(sig SignalAPI, config *Config) *Siggo {
 	contacts := GetContacts(config.UserNumber)
+	if self, ok := contacts[config.UserNumber]; ok {
+		self.Name = config.UserName
+	}
 	conversations := GetConversations(config.UserNumber, contacts)
 	s := &Siggo{
 		config:        config,
@@ -378,11 +428,6 @@ func NewSiggo(sig SignalAPI, config *Config) *Siggo {
 // GetContacts reads the contact list from disk for a given user
 func GetContacts(userNumber string) ContactList {
 	list := make(ContactList)
-	list[userNumber] = &Contact{
-		Number: userNumber,
-		Name:   "me",
-		Index:  0,
-	}
 	sig := signal.NewSignal(userNumber)
 	contacts, err := sig.GetContactList()
 	if err != nil {
@@ -407,7 +452,13 @@ func GetConversations(userNumber string, contacts ContactList) map[*Contact]*Con
 	conversations := make(map[*Contact]*Conversation)
 	for _, contact := range contacts {
 		log.Debugf("Adding conversation for: %+v\n", contact)
+		// check if we have a conversation file for this user
+		convPath := filepath.Join(ConversationFolder(), contact.Number)
 		conv := NewConversation(contact)
+		err := conv.Load(convPath) // if we fail to load, oh well
+		if err == nil {
+			log.Infof("loaded conversation from: %s", contact.Name)
+		}
 		conversations[contact] = conv
 	}
 	return conversations

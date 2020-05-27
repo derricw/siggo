@@ -31,11 +31,16 @@ var uiCmd = &cobra.Command{
 			log.SetLevel(log.DebugLevel)
 		}
 		log.SetOutput(outputFile)
-		cfg := &model.Config{
-			UserNumber: User,
-			UserName:   "me",
+
+		cfg, err := model.GetConfig()
+		if err != nil {
+			log.Fatal("failed to read config @ %s", model.DefaultConfigPath())
 		}
-		var signalAPI model.SignalAPI = signal.NewSignal(User)
+		if cfg.UserNumber == "" {
+			log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
+		}
+
+		var signalAPI model.SignalAPI = signal.NewSignal(cfg.UserNumber)
 		if Mock != "" {
 			b, err := ioutil.ReadFile(Mock)
 			if err != nil {
