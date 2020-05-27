@@ -132,7 +132,7 @@ func (s *Signal) Receive() error {
 	return err
 }
 
-// ReceiveForever receives contiuously until it receives a stop signal
+// ReceiveForever receives contiuously
 func (s *Signal) ReceiveForever() {
 	go func() {
 		for {

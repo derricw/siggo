@@ -106,6 +106,9 @@ type Conversation struct {
 	Messages      map[int64]*Message
 	MessageOrder  []int64
 	HasNewMessage bool
+	// hasNewData tracks whether new data has been added
+	// since the last save to disk
+	hasNewData bool
 }
 
 func (c *Conversation) String() string {
@@ -127,6 +130,7 @@ func (c *Conversation) addMessage(message *Message) {
 		// new messages
 		c.MessageOrder = append(c.MessageOrder, message.Timestamp)
 		c.HasNewMessage = true
+		c.hasNewData = true
 	}
 }
 
@@ -153,7 +157,7 @@ func (c *Conversation) CaughtUp() {
 	c.HasNewMessage = false
 }
 
-// SaveAs writes the last `maxMessages` to `path`.
+// SaveAs writes the conversation to `path`.
 func (c *Conversation) SaveAs(path string) error {
 	f, err := os.Create(path)
 	if err != nil {
@@ -172,17 +176,23 @@ func (c *Conversation) SaveAs(path string) error {
 	return nil
 }
 
+// Save writes the conversation to the default location only if it has new data
 func (c *Conversation) Save() error {
+	if !c.hasNewData {
+		return nil
+	}
 	folder := ConversationFolder()
 	err := os.MkdirAll(folder, os.ModePerm)
 	if err != nil {
 		return err
 	}
 	path := filepath.Join(ConversationFolder(), c.Contact.Number)
+	c.hasNewData = false // better to do this after successful save?
 	return c.SaveAs(path)
 }
 
 // Load will load a conversation saved @ `path`
+// TODO: load only the last N messages based on config
 func (c *Conversation) Load(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
@@ -287,7 +297,6 @@ func (s *Siggo) ReceiveForever() {
 
 func (s *Siggo) onSent(msg *signal.Message) error {
 	// add new message to conversation
-	//log.Infof("sent msg: %+v", msg)
 	sentMsg := msg.Envelope.SyncMessage.SentMessage
 	contactNumber := sentMsg.Destination
 	// if we have a name for this contact, use it
@@ -397,6 +406,7 @@ func (s *Siggo) onReceipt(msg *signal.Message) error {
 			message.IsRead = receiptMsg.IsRead
 		}
 	}
+	conv.hasNewData = true
 	return nil
 }
 
