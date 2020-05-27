@@ -12,15 +12,15 @@ func init() {
 }
 
 var linkCmd = &cobra.Command{
-	Use:   "link",
+	Use:   "link <phone number> <device name>",
 	Short: "link a device",
 	Long: `Generates a QR code that can be scanned by an existing signal device to link to.
 	Example:
-	$ siggo link work_laptop`,
-	Args: cobra.ExactArgs(1),
+	$ siggo link +1234567890 work_laptop`,
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("linking...")
-		sig := signal.NewSignal(User)
-		sig.Link(args[0])
+		sig := signal.NewSignal(args[0])
+		sig.Link(args[1])
 	},
 }

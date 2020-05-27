@@ -26,7 +26,7 @@ var contactsCmd = &cobra.Command{
 		if cfg.UserNumber == "" {
 			log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
 		}
-		signalAPI := signal.NewSignal(User)
+		signalAPI := signal.NewSignal(cfg.UserNumber)
 		s := model.NewSiggo(signalAPI, cfg)
 
 		for _, c := range s.Contacts().SortedByName() {

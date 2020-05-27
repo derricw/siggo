@@ -15,7 +15,7 @@ func init() {
 }
 
 var convCmd = &cobra.Command{
-	Use:   "conv",
+	Use:   "conv <contact>",
 	Short: "prints the conversation for a given contact",
 	Long: `example:
 	$ siggo conv +1234567890`,
@@ -35,7 +35,7 @@ var convCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalf("couldn't open mock data")
 			}
-			signalAPI = signal.NewMockSignal(User, b)
+			signalAPI = signal.NewMockSignal(cfg.UserNumber, b)
 		}
 		s := model.NewSiggo(signalAPI, cfg)
 		if Mock != "" {

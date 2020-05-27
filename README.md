@@ -9,7 +9,7 @@ A terminal gui for signal-cli, written in Go.
 
 siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian) or `libmatthew-unix-java` (AUR) is required.
 
-Install signal-cli and put it somewhere safe in your path. You will need to follow its instructions to either [link](https://github.com/AsamK/signal-cli/wiki/Linking-other-devices-(Provisioning)) or register your device. I plan on adding a feature to siggo to make linking more user-friendly.
+Install signal-cli and put it somewhere safe in your path. You will need to follow its instructions to either [link](https://github.com/AsamK/signal-cli/wiki/Linking-other-devices-(Provisioning)) or register your device. The `siggo link <phonenumber>` subcommand has been added to make linking more user-friendly, but has not been tested sufficiently. Be sure to prefix with `+` and country code (for example `+12345678901`).
 
 When setup is finished, you should be able to run without error:
 
@@ -26,7 +26,7 @@ make build
 ### Run
 
 ```
-bin/siggo -u +<yourphonenumber> ui
+bin/siggo ui
 ```
 
 ### Keybinds
@@ -47,18 +47,17 @@ signal-cli -u +<yourphonenumber> receive --json > example_messages.json
 ```
 You can then run siggo using it as mock input. This is useful for development and testing.
 ```
-bin/siggo -u +<yourphonenumber> ui -m example_messages.json
+bin/siggo ui -m example_messages.json
 ```
 This way you can test without sending yourself messages.
 
 ### Roadmap
 
 Here is a list of things that are currently broken.
-* Read receipts for outgoing messages
+* Read receipts for outgoing messages (`signal-cli` limitation)
 
 Here is a list of features I'd like to add.
 * get rid of the `ui` command and make that the default behavior of the binary
-* saving messages between sessions (should be optional)
 * Attachments support
 * gui configuration
 * let user re-sort contact list (for example alphabetically)

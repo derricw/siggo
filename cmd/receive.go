@@ -31,7 +31,7 @@ var receiveCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalf("couldn't open mock data")
 			}
-			signalAPI = signal.NewMockSignal(User, b)
+			signalAPI = signal.NewMockSignal(cfg.UserNumber, b)
 		}
 
 		s := model.NewSiggo(signalAPI, cfg)

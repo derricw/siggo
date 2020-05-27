@@ -58,7 +58,7 @@ var processCmd = &cobra.Command{
 	Long: `example:
 	signal-cli -u +12067902360 receive --json | siggo process`,
 	Run: func(cmd *cobra.Command, args []string) {
-		sig := signal.NewSignal(User)
+		sig := signal.NewSignal("")
 		sig.OnMessage(printMsg)
 		sig.OnSent(printSent)
 		sig.OnReceived(printReceived)

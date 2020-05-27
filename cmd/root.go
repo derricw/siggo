@@ -6,12 +6,10 @@ import (
 	"os"
 )
 
-var User string
 var Mock string
 var Debug bool
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&User, "user", "u", "", "user (currently phone number)")
 	rootCmd.PersistentFlags().StringVarP(&Mock, "mock", "m", "", "mock mode (uses example data)")
 	rootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "d", false, "debug logging")
 }
