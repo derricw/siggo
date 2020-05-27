@@ -87,6 +87,7 @@ func (c *ChatWindow) ContactUp() {
 			c.conversationPanel.Update(currentConv)
 			currentConv.CaughtUp()
 		}
+		c.conversationPanel.ScrollToEnd()
 	}
 }
 
@@ -101,6 +102,7 @@ func (c *ChatWindow) ContactDown() {
 			c.conversationPanel.Update(currentConv)
 			currentConv.CaughtUp()
 		}
+		c.conversationPanel.ScrollToEnd()
 	}
 }
 
@@ -440,6 +442,7 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	}
 	// update gui when events happen in siggo
 	w.update()
+	w.conversationPanel.ScrollToEnd()
 	siggo.NewInfo = func(conv *model.Conversation) {
 		app.QueueUpdateDraw(func() {
 			w.update()
