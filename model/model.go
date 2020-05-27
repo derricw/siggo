@@ -400,29 +400,42 @@ func (s *Siggo) onReceipt(msg *signal.Message) error {
 	return nil
 }
 
+// Conversations returns the current converstation book
 func (s *Siggo) Conversations() map[*Contact]*Conversation {
 	return s.conversations
 }
 
+// Contacts returns the current contact list
 func (s *Siggo) Contacts() ContactList {
 	return s.contacts
 }
 
+// SaveConversations saves all conversations to disk
+func (s *Siggo) SaveConversations() {
+	for _, conv := range s.conversations {
+		err := conv.Save()
+		if err != nil {
+			log.Errorf("failed to save conversation: %v", err)
+		}
+	}
+}
+
+// Quit does any cleanup we want to do at exit.
+func (s *Siggo) Quit() {
+	if s.config.SaveMessages {
+		s.SaveConversations()
+	}
+}
+
 // NewSiggo creates a new model
 func NewSiggo(sig SignalAPI, config *Config) *Siggo {
-	contacts := GetContacts(config.UserNumber)
-	if self, ok := contacts[config.UserNumber]; ok {
-		self.Name = config.UserName
-	}
-	conversations := GetConversations(config.UserNumber, contacts)
 	s := &Siggo{
-		config:        config,
-		contacts:      contacts,
-		conversations: conversations,
-		signal:        sig,
+		config: config,
+		signal: sig,
 
 		NewInfo: func(*Conversation) {}, // noop
 	}
+	s.init()
 	//sig.OnMessage(s.?)
 
 	sig.OnSent(s.onSent)
@@ -431,10 +444,19 @@ func NewSiggo(sig SignalAPI, config *Config) *Siggo {
 	return s
 }
 
-// GetContacts reads the contact list from disk for a given user
-func GetContacts(userNumber string) ContactList {
+func (s *Siggo) init() {
+	//load contacts and conversations for the first time
+	s.contacts = s.getContacts()
+	if self, ok := s.contacts[s.config.UserNumber]; ok {
+		self.Name = s.config.UserName
+	}
+	s.conversations = s.getConversations()
+}
+
+// getContacts reads a fresh contact list from disk for the configured user
+func (s *Siggo) getContacts() ContactList {
 	list := make(ContactList)
-	sig := signal.NewSignal(userNumber)
+	sig := signal.NewSignal(s.config.UserNumber)
 	contacts, err := sig.GetContactList()
 	if err != nil {
 		log.Warnf("failed to read contacts from disk: %v", err)
@@ -452,19 +474,21 @@ func GetContacts(userNumber string) ContactList {
 	return list
 }
 
-// GetConversations reads conversations from disk for a given user
-// and contact list
-func GetConversations(userNumber string, contacts ContactList) map[*Contact]*Conversation {
+// getConversations reads conversations from disk for the configured user's contact list
+func (s *Siggo) getConversations() map[*Contact]*Conversation {
 	conversations := make(map[*Contact]*Conversation)
-	for _, contact := range contacts {
+	for _, contact := range s.contacts {
 		log.Debugf("Adding conversation for: %+v\n", contact)
-		// check if we have a conversation file for this user
-		convPath := filepath.Join(ConversationFolder(), contact.Number)
 		conv := NewConversation(contact)
-		err := conv.Load(convPath) // if we fail to load, oh well
-		if err == nil {
-			log.Infof("loaded conversation from: %s", contact.Name)
+		// check if we have a conversation file for this user
+		if s.config.SaveMessages {
+			convPath := filepath.Join(ConversationFolder(), contact.Number)
+			err := conv.Load(convPath) // if we fail to load, oh well
+			if err == nil {
+				log.Infof("loaded conversation from: %s", contact.Name)
+			}
 		}
+		conv.CaughtUp()
 		conversations[contact] = conv
 	}
 	return conversations

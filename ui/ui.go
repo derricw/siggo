@@ -145,6 +145,7 @@ func (c *ChatWindow) ShowTempSentMsg(msg string) {
 func (c *ChatWindow) Quit() {
 	c.app.Stop()
 	// do we need to do anything else?
+	c.siggo.Quit()
 	os.Exit(0)
 }
 
