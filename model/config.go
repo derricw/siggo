@@ -46,6 +46,7 @@ func (c *Config) SaveAs(path string) error {
 	if err != nil {
 		return err
 	}
+	defer out.Close()
 	_, err = out.Write(d)
 	return err
 }

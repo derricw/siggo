@@ -117,6 +117,10 @@ func (c *Conversation) String() string {
 }
 
 func (c *Conversation) AddMessage(message *Message) {
+	c.addMessage(message)
+}
+
+func (c *Conversation) addMessage(message *Message) {
 	_, ok := c.Messages[message.Timestamp]
 	c.Messages[message.Timestamp] = message
 	if !ok {
@@ -155,6 +159,7 @@ func (c *Conversation) SaveAs(path string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	for _, msgID := range c.MessageOrder {
 		msg := c.Messages[msgID]
 		b, err := json.Marshal(msg)
@@ -183,6 +188,7 @@ func (c *Conversation) Load(path string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	s := bufio.NewScanner(f)
 	for s.Scan() {
 		msg := &Message{}
@@ -190,7 +196,7 @@ func (c *Conversation) Load(path string) error {
 		if err != nil {
 			return err
 		}
-		c.AddMessage(msg)
+		c.addMessage(msg)
 	}
 	return nil
 }
