@@ -42,6 +42,10 @@ siggo cfg color "Ruby Rhod" "#00FF00"
 
 ### Keybinds
 
+* `j` - Scroll Down
+* `k` - Scroll Up
+* `J` - Next Contact
+* `K` - Previous Contact
 * `i` - Insert Mode
 * `I` - Compose
 * `y` - Yank Mode

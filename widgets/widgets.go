@@ -380,14 +380,20 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	w.sendPanel = NewSendPanel(w, siggo)
 	w.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Setup keys
-		log.Debug("Key Event <MAIN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		log.Debugf("Key Event <MAIN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
 		switch event.Key() {
 		case tcell.KeyRune:
 			switch event.Rune() {
 			case 106: // j
-				w.ContactDown()
+				convInputHandler(event, func(p tview.Primitive) {})
 				return nil
 			case 107: // k
+				convInputHandler(event, func(p tview.Primitive) {})
+				return nil
+			case 74: // J
+				w.ContactDown()
+				return nil
+			case 75: // K
 				w.ContactUp()
 				return nil
 			case 105: // i
@@ -411,6 +417,12 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			convInputHandler(event, func(p tview.Primitive) {})
 			return nil
 		case tcell.KeyPgDn:
+			convInputHandler(event, func(p tview.Primitive) {})
+			return nil
+		case tcell.KeyUp:
+			convInputHandler(event, func(p tview.Primitive) {})
+			return nil
+		case tcell.KeyDown:
 			convInputHandler(event, func(p tview.Primitive) {})
 			return nil
 		case tcell.KeyEnd:
