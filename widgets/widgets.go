@@ -288,12 +288,15 @@ func NewContactListPanel(parent *ChatWindow, siggo *model.Siggo) *ContactListPan
 
 type ConversationPanel struct {
 	*tview.TextView
+	hideTitle bool
 }
 
 func (p *ConversationPanel) Update(conv *model.Conversation) {
 	p.Clear()
 	p.SetText(conv.String())
-	p.SetTitle(fmt.Sprintf("%s <%s>", conv.Contact.Name, conv.Contact.Number))
+	if !p.hideTitle {
+		p.SetTitle(fmt.Sprintf("%s <%s>", conv.Contact.Name, conv.Contact.Number))
+	}
 }
 
 func (p *ConversationPanel) Clear() {
@@ -449,8 +452,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 
 	if w.siggo.Config().HidePanelTitles {
 		w.contactsPanel.SetTitle("")
-		w.conversationPanel.SetTitle("")
 		w.sendPanel.SetTitle("")
+		w.conversationPanel.SetTitle("")
+		w.conversationPanel.hideTitle = true
 	}
 
 	w.siggo = siggo
