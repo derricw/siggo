@@ -48,7 +48,7 @@ siggo cfg color "Ruby Rhod" "#00FF00"
 * `K` - Previous Contact
 * `i` - Insert Mode
 * `I` - Compose
-* `y` - Yank Mode
+* `y` - Yank Mode (doesn't do anything yet)
 * `ESC` - Normal Mode
 * `CTRL+L` - (insert mode) Clear input field
 * `ALT+Q` - Quit

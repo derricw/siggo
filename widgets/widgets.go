@@ -447,6 +447,12 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	w.AddItem(w.conversationPanel, 0, 1, 1, 1, 0, 0, false)
 	w.AddItem(w.sendPanel, 1, 1, 1, 1, 0, 0, false)
 
+	if w.siggo.Config().HidePanelTitles {
+		w.contactsPanel.SetTitle("")
+		w.conversationPanel.SetTitle("")
+		w.sendPanel.SetTitle("")
+	}
+
 	w.siggo = siggo
 	contacts := siggo.Contacts().SortedByIndex()
 	if len(contacts) > 0 {

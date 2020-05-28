@@ -427,6 +427,11 @@ func (s *Siggo) Contacts() ContactList {
 	return s.contacts
 }
 
+// Config returns a copy of the current configuration
+func (s *Siggo) Config() Config {
+	return *s.config
+}
+
 // SaveConversations saves all conversations to disk
 func (s *Siggo) SaveConversations() {
 	for _, conv := range s.conversations {

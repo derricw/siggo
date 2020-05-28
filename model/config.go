@@ -30,10 +30,14 @@ var DefaultConfig Config = Config{
 }
 
 type Config struct {
-	UserNumber            string            `yaml:"user_number"`
-	UserName              string            `yaml:"user_name"`
-	SaveMessages          bool              `yaml:"save_messages"`
+	UserNumber string `yaml:"user_number"`
+	UserName   string `yaml:"user_name"`
+	// SaveMessages enables message saving. You will still load any (previously) saved messages
+	// at startup.
+	SaveMessages bool `yaml:"save_messages"`
+	// doesn't do anything yet
 	MaxConversationLength int               `yaml:"max_coversation_length"`
+	HidePanelTitles       bool              `yaml:"hide_panel_titles"`
 	ContactColors         map[string]string `yaml:"contact_colors"`
 }
 
