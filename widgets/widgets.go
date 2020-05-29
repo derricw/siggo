@@ -5,8 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"regexp"
+	"strings"
 	"time"
 
+	"github.com/atotto/clipboard"
 	"github.com/derricw/siggo/model"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -21,10 +24,13 @@ const (
 	YankMode
 )
 
+// stolen from suckoverflow
+var urlRegex = regexp.MustCompile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)`)
+
 type ConvInfo map[*model.Contact]*model.Conversation
 
 type ChatWindow struct {
-	// todo: maybe use Flex instead?
+	// todo: maybe use Flex instead of Grid?
 	*tview.Grid
 	siggo          *model.Siggo
 	currentContact *model.Contact
@@ -34,7 +40,12 @@ type ChatWindow struct {
 	contactsPanel     *ContactListPanel
 	conversationPanel *ConversationPanel
 	searchPanel       tview.Primitive
+	statusBar         *StatusBar
 	app               *tview.Application
+	normalKeybinds    func(*tcell.EventKey) *tcell.EventKey
+	yankKeybinds      func(*tcell.EventKey) *tcell.EventKey
+	openKeybinds      func(*tcell.EventKey) *tcell.EventKey
+	goKeybinds        func(*tcell.EventKey) *tcell.EventKey
 }
 
 func (c *ChatWindow) InsertMode() {
@@ -48,6 +59,7 @@ func (c *ChatWindow) YankMode() {
 	log.Debug("YANK MODE")
 	c.conversationPanel.SetBorderColor(tcell.ColorOrange)
 	c.mode = YankMode
+	c.SetInputCapture(c.yankKeybinds)
 }
 
 func (c *ChatWindow) NormalMode() {
@@ -57,6 +69,44 @@ func (c *ChatWindow) NormalMode() {
 	c.conversationPanel.SetBorderColor(tcell.ColorWhite)
 	c.sendPanel.SetBorderColor(tcell.ColorWhite)
 	c.mode = NormalMode
+	c.SetInputCapture(c.normalKeybinds)
+}
+
+// YankLastMsg copies the last message of a conversation to the clipboard.
+func (c *ChatWindow) YankLastMsg() {
+	conv, err := c.currentConversation()
+	if err != nil {
+		c.SetErrorStatus(err)
+		return
+	}
+	if conv == nil {
+		c.SetErrorStatus(fmt.Errorf("no messages"))
+	}
+	content := strings.TrimSpace(conv.LastMessage().Content)
+	err = clipboard.WriteAll(content)
+	if err != nil {
+		c.SetErrorStatus(err)
+		return
+	}
+	c.SetStatus(fmt.Sprintf("📋%s", content))
+	c.NormalMode()
+}
+
+// YankLastLink copies the last link in a converstaion to the clipboard
+func (c *ChatWindow) YankLastLink() {
+	toSearch := c.conversationPanel.GetText(true)
+	matches := urlRegex.FindAllString(toSearch, -1)
+	if len(matches) > 0 {
+		last := matches[len(matches)-1]
+		if err := clipboard.WriteAll(last); err != nil {
+			c.SetErrorStatus(err)
+			return
+		}
+		c.SetStatus(fmt.Sprintf("📋%s", last))
+	} else {
+		c.SetStatus(fmt.Sprintf("📋<NO MATCHES>"))
+	}
+	c.NormalMode()
 }
 
 func (c *ChatWindow) ShowContactSearch() {
@@ -75,19 +125,59 @@ func (c *ChatWindow) HideSearch() {
 	c.app.SetFocus(c)
 }
 
+func (c *ChatWindow) ShowStatusBar() {
+	c.SetRows(0, 3, 1)
+	c.AddItem(c.statusBar, 2, 0, 1, 2, 0, 0, false)
+}
+
+func (c *ChatWindow) HideStatusBar() {
+	c.RemoveItem(c.statusBar)
+	c.SetRows(0, 3)
+}
+
+func (c *ChatWindow) SetStatus(statusMsg string) {
+	log.Info(statusMsg)
+	c.statusBar.SetText(statusMsg)
+	c.ShowStatusBar()
+}
+
+func (c *ChatWindow) SetErrorStatus(err error) {
+	log.Errorf("%s", err)
+	c.statusBar.SetText(fmt.Sprintf("🔥%s", err))
+	c.ShowStatusBar()
+}
+
+func (c *ChatWindow) currentConversation() (*model.Conversation, error) {
+	currentConv, ok := c.siggo.Conversations()[c.currentContact]
+	if ok {
+		return currentConv, nil
+	} else {
+		return nil, fmt.Errorf("no conversation for current contact: %v", c.currentContact)
+	}
+}
+
+func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
+	c.currentContact = contact
+	c.contactsPanel.Update()
+	conv, err := c.currentConversation()
+	if err != nil {
+		return err
+	}
+	c.conversationPanel.Update(conv)
+	conv.CaughtUp()
+	c.conversationPanel.ScrollToEnd()
+	return nil
+}
+
 // TODO: remove code duplication with ContactDown()
 func (c *ChatWindow) ContactUp() {
 	log.Debug("PREVIOUS CONVERSATION")
 	prevContact := c.contactsPanel.Previous()
 	if prevContact != c.currentContact {
-		c.currentContact = prevContact
-		c.contactsPanel.Update()
-		currentConv, ok := c.siggo.Conversations()[c.currentContact]
-		if ok {
-			c.conversationPanel.Update(currentConv)
-			currentConv.CaughtUp()
+		err := c.SetCurrentContact(prevContact)
+		if err != nil {
+			log.Errorf("%s", err)
 		}
-		c.conversationPanel.ScrollToEnd()
 	}
 }
 
@@ -95,14 +185,10 @@ func (c *ChatWindow) ContactDown() {
 	log.Debug("NEXT CONVERSATION")
 	nextContact := c.contactsPanel.Next()
 	if nextContact != c.currentContact {
-		c.currentContact = nextContact
-		c.contactsPanel.Update()
-		currentConv, ok := c.siggo.Conversations()[c.currentContact]
-		if ok {
-			c.conversationPanel.Update(currentConv)
-			currentConv.CaughtUp()
+		err := c.SetCurrentContact(nextContact)
+		if err != nil {
+			log.Errorf("%s", err)
 		}
-		c.conversationPanel.ScrollToEnd()
 	}
 }
 
@@ -367,6 +453,19 @@ func NewSearchInput(parent *SearchPanel) *SearchInput {
 	return si
 }
 
+type StatusBar struct {
+	*tview.TextView
+	parent *ChatWindow
+}
+
+func NewStatusBar(parent *ChatWindow) *StatusBar {
+	sb := &StatusBar{
+		TextView: tview.NewTextView(),
+		parent:   parent,
+	}
+	return sb
+}
+
 func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	layout := tview.NewGrid().
 		SetRows(0, 3).
@@ -381,9 +480,10 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	convInputHandler := w.conversationPanel.InputHandler()
 	w.contactsPanel = NewContactListPanel(w, siggo)
 	w.sendPanel = NewSendPanel(w, siggo)
-	w.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// Setup keys
-		log.Debugf("Key Event <MAIN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+	w.statusBar = NewStatusBar(w)
+	// NORMAL MODE KEYBINDINGS
+	w.normalKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
+		log.Debugf("Key Event <NORMAL>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
 		switch event.Key() {
 		case tcell.KeyRune:
 			switch event.Rune() {
@@ -411,8 +511,8 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 					w.Quit()
 				}
 				return nil
-			case 121:
-				w.YankMode() // y
+			case 121: // y
+				w.YankMode()
 				return nil
 			}
 		// pass some events on to the conversation panel
@@ -436,13 +536,33 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			return nil
 		case tcell.KeyESC:
 			w.NormalMode()
+			w.HideStatusBar()
 			return nil
 		case tcell.KeyCtrlT:
 			w.ShowContactSearch()
 			return nil
 		}
 		return event
-	})
+	}
+	w.yankKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
+		log.Debugf("Key Event <YANK>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 121: // y
+				w.YankLastMsg()
+				return nil
+			case 108: // l
+				w.YankLastLink()
+				return nil
+			}
+		case tcell.KeyESC:
+			w.NormalMode()
+			return nil
+		}
+		return event
+	}
+	w.SetInputCapture(w.normalKeybinds)
 
 	// primitiv, row, col, rowSpan, colSpan, minGridHeight, maxGridHeight, focus)
 	// TODO: lets make some of the spans confiurable?

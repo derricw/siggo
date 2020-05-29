@@ -141,7 +141,17 @@ func (c *Conversation) addMessage(message *Message) {
 	}
 }
 
-// PopMessage just removes the last message, if it exists
+// LastMessage returns the most recent message. Can be nil.
+func (c *Conversation) LastMessage() *Message {
+	nMessage := len(c.MessageOrder)
+	if nMessage > 0 {
+		lastMsgID := c.MessageOrder[nMessage-1]
+		return c.Messages[lastMsgID]
+	}
+	return nil
+}
+
+// PopMessage just removes and returns the last message, if it exists
 func (c *Conversation) PopMessage() {
 	nMessage := len(c.MessageOrder)
 	if nMessage > 0 {
