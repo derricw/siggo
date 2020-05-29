@@ -1,5 +1,5 @@
 # siggo
-[![Documentation](https://godoc.org/github.com/derricw/siggo)](http://godoc.org/github.com/derricw/siggo)
+[![GoDoc](https://godoc.org/github.com/derricw/siggo?status.svg)](https://godoc.org/github.com/derricw/siggo)
 
 A terminal gui for signal-cli, written in Go.
 
