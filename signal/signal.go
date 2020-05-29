@@ -1,3 +1,4 @@
+// Package signal provides a minimal wrapper for the signal-cli functionality that we need.
 package signal
 
 import (
@@ -63,31 +64,8 @@ type SentCallback func(*Message) error
 type ReceiptCallback func(*Message) error
 type ReceivedCallback func(*Message) error
 
-type Signal struct {
-	uname             string
-	msgCallbacks      []MessageCallback
-	sentCallbacks     []SentCallback
-	receiptCallbacks  []ReceiptCallback
-	receivedCallbacks []ReceivedCallback
-}
-
-func (s *Signal) OnMessage(callback MessageCallback) {
-	s.msgCallbacks = append(s.msgCallbacks, callback)
-}
-
-func (s *Signal) OnSent(callback SentCallback) {
-	s.sentCallbacks = append(s.sentCallbacks, callback)
-}
-
-func (s *Signal) OnReceipt(callback ReceiptCallback) {
-	s.receiptCallbacks = append(s.receiptCallbacks, callback)
-}
-
-func (s *Signal) OnReceived(callback ReceivedCallback) {
-	s.receivedCallbacks = append(s.receivedCallbacks, callback)
-}
-
-func (s *Signal) Exec(args ...string) ([]byte, error) {
+// Exec invokes signal-cli with the supplied args and returns the bytes that writes to stdout
+func Exec(args ...string) ([]byte, error) {
 	var out bytes.Buffer
 	cmd := exec.Command("signal-cli", args...)
 	cmd.Stdout = &out
@@ -98,9 +76,42 @@ func (s *Signal) Exec(args ...string) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
+// Signal represents a signal-cli session for a given user. It can be run in daemon mode by calling
+// the `Daemon` method. It can also be used to send and receive manually using `Receive` and `Send`.
+type Signal struct {
+	uname             string
+	msgCallbacks      []MessageCallback
+	sentCallbacks     []SentCallback
+	receiptCallbacks  []ReceiptCallback
+	receivedCallbacks []ReceivedCallback
+}
+
+// OnMessage registers a callback to be executed upon any incoming message of any kind (that we
+// know how to process).
+func (s *Signal) OnMessage(callback MessageCallback) {
+	s.msgCallbacks = append(s.msgCallbacks, callback)
+}
+
+// OnSent registers a callback to be executed whenver a sent message appears on the wire (currently,
+// this is when a different linked device sends a message).
+func (s *Signal) OnSent(callback SentCallback) {
+	s.sentCallbacks = append(s.sentCallbacks, callback)
+}
+
+// OnReceipt registers a callback to be executed whenever a message receipt (for example a Read
+// receipt or a Delivery receipt) is received.
+func (s *Signal) OnReceipt(callback ReceiptCallback) {
+	s.receiptCallbacks = append(s.receiptCallbacks, callback)
+}
+
+// OnReceived registers a callback to be executed whenver an incoming message is received.
+func (s *Signal) OnReceived(callback ReceivedCallback) {
+	s.receivedCallbacks = append(s.receivedCallbacks, callback)
+}
+
 // Version returns the current version of signal-cli
 func (s *Signal) Version() (string, error) {
-	b, err := s.Exec("-v")
+	b, err := Exec("-v")
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +127,7 @@ func (s *Signal) Version() (string, error) {
 
 // Receive receives and processes all outstanding messages
 func (s *Signal) Receive() error {
-	b, err := s.Exec("-u", s.uname, "receive", "--json")
+	b, err := Exec("-u", s.uname, "receive", "--json")
 	if err != nil {
 		return err
 	}
@@ -132,7 +143,8 @@ func (s *Signal) Receive() error {
 	return err
 }
 
-// ReceiveForever receives contiuously
+// ReceiveForever receives contiuously. WARNING: this will continuously start and stop the JVM and
+// is not recommended unless you want to simulate the Electon app's recource useage.
 func (s *Signal) ReceiveForever() {
 	go func() {
 		for {
@@ -146,7 +158,7 @@ func (s *Signal) ReceiveForever() {
 	}()
 }
 
-// Daemon starts the dbus daemon
+// Daemon starts the dbus daemon and receives forever.
 func (s *Signal) Daemon() error {
 	cmd := exec.Command("signal-cli", "-u", s.uname, "daemon", "--json")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -193,6 +205,7 @@ func (s *Signal) Send(dest, msg string) (int64, error) {
 	return int64(ID), nil
 }
 
+// SendDbus does the same thing as Send but it goes through a running daemon.
 func (s *Signal) SendDbus(dest, msg string) (int64, error) {
 	if !strings.HasPrefix(dest, "+") {
 		dest = fmt.Sprintf("+%s", dest)
@@ -209,6 +222,7 @@ func (s *Signal) SendDbus(dest, msg string) (int64, error) {
 	return int64(ID), nil
 }
 
+// Link will attempt to link to an existing registered device.
 func (s *Signal) Link(deviceName string) error {
 	cmd := exec.Command("signal-cli", "link", "-n", deviceName)
 	out, err := cmd.StdoutPipe()
@@ -229,6 +243,7 @@ func (s *Signal) Link(deviceName string) error {
 	return cmd.Wait()
 }
 
+// GetUserData returns the user data for the current user.
 func (s *Signal) GetUserData() (*SignalUserData, error) {
 	usr, err := user.Current()
 	if err != nil {
