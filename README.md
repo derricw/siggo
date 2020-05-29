@@ -48,7 +48,12 @@ siggo cfg color "Ruby Rhod" "#00FF00"
 * `K` - Previous Contact
 * `i` - Insert Mode
 * `I` - Compose
-* `y` - Yank Mode (doesn't do anything yet)
+* `y` - Yank Mode
+  * `yy` - Yank Last Message (from current conversation)
+  * `yl` - Yank Last URL
+* `o` - Open Mode (doesn't work yet)
+  * `oo` - Open Last Attachment
+  * `ol` - Open Last Link
 * `ESC` - Normal Mode
 * `CTRL+L` - (insert mode) Clear input field
 * `ALT+Q` - Quit
