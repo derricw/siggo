@@ -6,7 +6,7 @@ A terminal gui for signal-cli, written in Go.
 
 ### Dependencies
 
-* [signal-cli](https://github.com/AsamK/signal-cli).
+* [signal-cli](https://github.com/AsamK/signal-cli). (>=0.6.7)
 
 siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian) or `libmatthew-unix-java` (AUR) is required.
 
@@ -77,8 +77,9 @@ This way you can test without sending yourself messages.
 
 Here is a list of things that are currently broken.
 * Send read receipts for incoming messages (`signal-cli` limitation, but might be fixed soon)
+* Open mode
 
-Here is a list of features I'd like to add.
+Here is a list of features I'd like to add soonish.
 * Attachments support
 * gui configuration
 * let user re-sort contact list (for example alphabetically)
@@ -87,3 +88,4 @@ Here is a list of features I'd like to add.
 * groups support
 * use dbus to send instead of signal-cli, to avoid having to spin up the JVM (might also fix the read receipt issue)
 * there is still some data that i'm dropping on the floor
+* wouldn't tests be neat?

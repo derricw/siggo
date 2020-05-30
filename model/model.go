@@ -30,6 +30,17 @@ type Contact struct {
 	Number PhoneNumber
 	Name   string
 	Index  int
+	Alias  string
+}
+
+func (c *Contact) String() string {
+	if c.Alias != "" {
+		return c.Alias
+	}
+	if c.Name != "" {
+		return c.Name
+	}
+	return c.Number
 }
 
 type ContactList map[PhoneNumber]*Contact
@@ -135,6 +146,7 @@ func (c *Conversation) addMessage(message *Message) {
 	c.Messages[message.Timestamp] = message
 	if !ok {
 		// new messages
+		message.From = c.Contact.String()
 		c.MessageOrder = append(c.MessageOrder, message.Timestamp)
 		c.HasNewMessage = true
 		c.hasNewData = true
@@ -496,10 +508,15 @@ func (s *Siggo) getContacts() ContactList {
 	}
 	for _, c := range contacts {
 		if c.InboxPosition != nil {
+			alias := ""
+			if s.config.ContactAliases != nil {
+				alias = s.config.ContactAliases[c.Name]
+			}
 			list[c.Number] = &Contact{
 				Number: c.Number,
 				Name:   c.Name,
 				Index:  *c.InboxPosition,
+				Alias:  alias,
 			}
 		}
 	}

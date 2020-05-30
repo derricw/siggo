@@ -336,12 +336,7 @@ func (cl *ContactListPanel) Update() {
 	convs := cl.siggo.Conversations()
 	log.Debug("sorted contacts: %v", sorted)
 	for i, c := range sorted {
-		id := ""
-		if c.Name != "" {
-			id = c.Name
-		} else {
-			id = c.Number
-		}
+		id := c.String()
 		line := fmt.Sprintf("%s\n", id)
 		color := convs[c].Color()
 		if cl.currentIndex == i {

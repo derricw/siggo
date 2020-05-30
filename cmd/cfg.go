@@ -13,6 +13,7 @@ import (
 
 func init() {
 	cfgCmd.AddCommand(cfgColorCmd)
+	cfgCmd.AddCommand(cfgAliasCmd)
 	rootCmd.AddCommand(cfgCmd)
 }
 
@@ -35,8 +36,8 @@ var cfgColorCmd = &cobra.Command{
 	Short: "sets or prints the color for a contact",
 	Long: `Accepts W3C color names or hex format.
 	Example:
-    $ siggo cfg color "John Smith" DeepSkyBlue
-    $ siggo cfg color "John Smith" "#FF00FF"`,
+    $ siggo cfg color "Leloo Dallas" DeepSkyBlue
+    $ siggo cfg color "Ruby Rhod" "#00FF00"`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			log.Fatalf("color config requires at least a contact name")
@@ -75,6 +76,53 @@ var cfgColorCmd = &cobra.Command{
 				cfg.ContactColors = make(map[string]string)
 			}
 			cfg.ContactColors[contactName] = colorName
+			err = cfg.Save()
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			log.Fatalf("too many args")
+		}
+	},
+}
+
+var cfgAliasCmd = &cobra.Command{
+	Use:   "alias",
+	Short: "sets or prints the alias for a contact",
+	Long: `Example:
+	$ siggo cfg alias "Ruby Rhod" "Super Green"`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			log.Fatalf("alias config requires at least a contact name")
+		} else if len(args) == 1 {
+			// show alias for contact
+			contactName := args[0]
+			cfg, err := model.GetConfig()
+			if err != nil {
+				log.Fatalf("couldn't load current config: %s", err)
+			}
+			if alias, ok := cfg.ContactAliases[contactName]; ok {
+				// found contact
+				fmt.Printf("%s: %s\n", contactName, alias)
+			} else {
+				log.Fatalf("contact '%s' has no alias configuration", contactName)
+			}
+		} else if len(args) == 2 {
+			// set alias for contact
+			contactName := args[0]
+			alias := strings.ToLower(args[1])
+			cfg, err := model.GetConfig()
+			if err != nil {
+				log.Fatalf("couldn't load current config: %s", err)
+			}
+			if cfg.UserNumber == "" {
+				log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
+			}
+			// set color and save config
+			if cfg.ContactAliases == nil {
+				cfg.ContactAliases = make(map[string]string)
+			}
+			cfg.ContactAliases[contactName] = alias
 			err = cfg.Save()
 			if err != nil {
 				log.Fatal(err)

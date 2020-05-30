@@ -25,8 +25,12 @@ func ConversationFolder() string {
 	return filepath.Join(DefaultConfigFolder(), "conversations")
 }
 
-var DefaultConfig Config = Config{
-	UserName: "self",
+func DefaultConfig() *Config {
+	return &Config{
+		UserName:       "self",
+		ContactColors:  make(map[string]string),
+		ContactAliases: make(map[string]string),
+	}
 }
 
 type Config struct {
@@ -39,6 +43,7 @@ type Config struct {
 	MaxConversationLength int               `yaml:"max_coversation_length"`
 	HidePanelTitles       bool              `yaml:"hide_panel_titles"`
 	ContactColors         map[string]string `yaml:"contact_colors"`
+	ContactAliases        map[string]string `yaml:"contact_aliases"`
 }
 
 // SaveAs writes the config to `path`
@@ -73,14 +78,14 @@ func LoadConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg := Config{}
+	cfg := DefaultConfig()
 	err = yaml.Unmarshal(b, &cfg)
-	return &cfg, err
+	return cfg, err
 }
 
 // NewConfigFile makes a new config file at `path` and returns the default config.
 func NewConfigFile(path string) (*Config, error) {
-	cfg := DefaultConfig
+	cfg := DefaultConfig()
 	dir := filepath.Dir(path)
 	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
@@ -91,7 +96,7 @@ func NewConfigFile(path string) (*Config, error) {
 		log.Printf("failed to save config @ %s", path)
 	}
 	log.Printf("default config saved @ %s", path)
-	return &cfg, nil
+	return cfg, nil
 }
 
 // GetConfig returns the current configuration from the
