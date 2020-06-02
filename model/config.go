@@ -9,8 +9,10 @@ import (
 	"path/filepath"
 )
 
-var configFilename string = "config.yml"
-var configFolder string = ".siggo"
+var (
+	configFilename string = "config.yml"
+	configFolder   string = ".siggo"
+)
 
 func DefaultConfigFolder() string {
 	d, _ := os.UserHomeDir()
@@ -45,6 +47,9 @@ type Config struct {
 	HidePhoneNumbers      bool              `yaml:"hide_phone_numbers"`
 	ContactColors         map[string]string `yaml:"contact_colors"`
 	ContactAliases        map[string]string `yaml:"contact_aliases"`
+
+	// No rotation provided, use at your own risk!
+	LogFilePath string `yaml:"log_file"`
 }
 
 // SaveAs writes the config to `path`
