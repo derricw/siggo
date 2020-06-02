@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 
 	"github.com/derricw/siggo/model"
 	"github.com/derricw/siggo/signal"
@@ -31,15 +30,12 @@ var convCmd = &cobra.Command{
 		}
 
 		var signalAPI model.SignalAPI = signal.NewSignal(cfg.UserNumber)
-		if Mock != "" {
-			b, err := ioutil.ReadFile(Mock)
-			if err != nil {
-				log.Fatalf("couldn't open mock data")
-			}
-			signalAPI = signal.NewMockSignal(cfg.UserNumber, b)
+		if mock != "" {
+			signalAPI = setupMock(mock, cfg)
 		}
+
 		s := model.NewSiggo(signalAPI, cfg)
-		if Mock != "" {
+		if mock != "" {
 			s.Receive()
 		}
 

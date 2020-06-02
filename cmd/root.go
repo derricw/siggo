@@ -15,15 +15,15 @@ import (
 )
 
 var (
-	Mock  string
-	Debug bool
+	mock  string
+	debug bool
 )
 
 const defaultLogPath = "/tmp/siggo.log"
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&Mock, "mock", "m", "", "mock mode (uses example data)")
-	rootCmd.PersistentFlags().BoolVarP(&Debug, "debug", "d", false, "debug logging")
+	rootCmd.PersistentFlags().StringVarP(&mock, "mock", "m", "", "mock mode (uses example data)")
+	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug logging")
 }
 
 func initLogging(cfg *model.Config) {
@@ -34,10 +34,18 @@ func initLogging(cfg *model.Config) {
 	if err != nil {
 		log.Fatalf("error creating log file: %v %v", cfg.LogFilePath, err)
 	}
-	if Debug {
+	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
 	log.SetOutput(logFile)
+}
+
+func setupMock(mockFileName string, cfg *model.Config) *signal.MockSignal {
+	b, err := ioutil.ReadFile(mock)
+	if err != nil {
+		log.Fatalf("couldn't open mock data: %v %v", mock, err)
+	}
+	return signal.NewMockSignal(cfg.UserNumber, b)
 }
 
 var rootCmd = &cobra.Command{
@@ -57,12 +65,8 @@ var rootCmd = &cobra.Command{
 		}
 
 		var signalAPI model.SignalAPI = signal.NewSignal(cfg.UserNumber)
-		if Mock != "" {
-			b, err := ioutil.ReadFile(Mock)
-			if err != nil {
-				log.Fatal("couldn't open mock data")
-			}
-			signalAPI = signal.NewMockSignal(cfg.UserNumber, b)
+		if mock != "" {
+			signalAPI = setupMock(mock, cfg)
 		}
 
 		s := model.NewSiggo(signalAPI, cfg)
