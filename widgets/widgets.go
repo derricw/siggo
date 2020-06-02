@@ -74,26 +74,33 @@ func (c *ChatWindow) NormalMode() {
 
 // YankLastMsg copies the last message of a conversation to the clipboard.
 func (c *ChatWindow) YankLastMsg() {
+	c.NormalMode()
 	conv, err := c.currentConversation()
 	if err != nil {
 		c.SetErrorStatus(err)
 		return
 	}
 	if conv == nil {
-		c.SetErrorStatus(fmt.Errorf("no messages"))
+		c.SetErrorStatus(fmt.Errorf("<NO CONVERSATION>")) // this shouldn't happen
+		return
 	}
-	content := strings.TrimSpace(conv.LastMessage().Content)
+	var lastMsg *model.Message
+	if lastMsg = conv.LastMessage(); lastMsg == nil {
+		c.SetStatus("📋<NO MESSAGES>") // this is fine
+		return
+	}
+	content := strings.TrimSpace(lastMsg.Content)
 	err = clipboard.WriteAll(content)
 	if err != nil {
 		c.SetErrorStatus(err)
 		return
 	}
 	c.SetStatus(fmt.Sprintf("📋%s", content))
-	c.NormalMode()
 }
 
 // YankLastLink copies the last link in a converstaion to the clipboard
 func (c *ChatWindow) YankLastLink() {
+	c.NormalMode()
 	toSearch := c.conversationPanel.GetText(true)
 	matches := urlRegex.FindAllString(toSearch, -1)
 	if len(matches) > 0 {
@@ -106,7 +113,6 @@ func (c *ChatWindow) YankLastLink() {
 	} else {
 		c.SetStatus(fmt.Sprintf("📋<NO MATCHES>"))
 	}
-	c.NormalMode()
 }
 
 func (c *ChatWindow) ShowContactSearch() {
@@ -369,15 +375,21 @@ func NewContactListPanel(parent *ChatWindow, siggo *model.Siggo) *ContactListPan
 
 type ConversationPanel struct {
 	*tview.TextView
-	hideTitle bool
+	hideTitle       bool
+	hidePhoneNumber bool
 }
 
 func (p *ConversationPanel) Update(conv *model.Conversation) {
 	p.Clear()
 	p.SetText(conv.String())
 	if !p.hideTitle {
-		p.SetTitle(fmt.Sprintf("%s <%s>", conv.Contact.Name, conv.Contact.Number))
+		if !p.hidePhoneNumber {
+			p.SetTitle(fmt.Sprintf("%s <%s>", conv.Contact.String(), conv.Contact.Number))
+		} else {
+			p.SetTitle(conv.Contact.String())
+		}
 	}
+	conv.HasNewMessage = false
 }
 
 func (p *ConversationPanel) Clear() {
@@ -570,6 +582,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 		w.sendPanel.SetTitle("")
 		w.conversationPanel.SetTitle("")
 		w.conversationPanel.hideTitle = true
+	}
+	if w.siggo.Config().HidePhoneNumbers {
+		w.conversationPanel.hidePhoneNumber = true
 	}
 
 	w.siggo = siggo

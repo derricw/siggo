@@ -146,7 +146,10 @@ func (c *Conversation) addMessage(message *Message) {
 	c.Messages[message.Timestamp] = message
 	if !ok {
 		// new messages
-		message.From = c.Contact.String()
+		if !message.FromSelf {
+			// apply alias if we need to
+			message.From = c.Contact.String()
+		}
 		c.MessageOrder = append(c.MessageOrder, message.Timestamp)
 		c.HasNewMessage = true
 		c.hasNewData = true

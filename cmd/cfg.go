@@ -118,10 +118,7 @@ var cfgAliasCmd = &cobra.Command{
 			if cfg.UserNumber == "" {
 				log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
 			}
-			// set color and save config
-			if cfg.ContactAliases == nil {
-				cfg.ContactAliases = make(map[string]string)
-			}
+			// set alias and save config
 			cfg.ContactAliases[contactName] = alias
 			err = cfg.Save()
 			if err != nil {

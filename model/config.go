@@ -42,6 +42,7 @@ type Config struct {
 	// doesn't do anything yet
 	MaxConversationLength int               `yaml:"max_coversation_length"`
 	HidePanelTitles       bool              `yaml:"hide_panel_titles"`
+	HidePhoneNumbers      bool              `yaml:"hide_phone_numbers"`
 	ContactColors         map[string]string `yaml:"contact_colors"`
 	ContactAliases        map[string]string `yaml:"contact_aliases"`
 }
