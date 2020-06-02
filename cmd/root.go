@@ -32,7 +32,7 @@ func initLogging(cfg *model.Config) {
 	}
 	logFile, err := os.Create(cfg.LogFilePath)
 	if err != nil {
-		log.Fatal("error creating log file: %v %v", cfg.LogFilePath, err)
+		log.Fatalf("error creating log file: %v %v", cfg.LogFilePath, err)
 	}
 	if Debug {
 		log.SetLevel(log.DebugLevel)
@@ -47,7 +47,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := model.GetConfig()
 		if err != nil {
-			log.Fatal("failed to read config @ %s", model.DefaultConfigPath())
+			log.Fatalf("failed to read config @ %s", model.DefaultConfigPath())
 		}
 
 		initLogging(cfg)
@@ -60,7 +60,7 @@ var rootCmd = &cobra.Command{
 		if Mock != "" {
 			b, err := ioutil.ReadFile(Mock)
 			if err != nil {
-				log.Fatalf("couldn't open mock data")
+				log.Fatal("couldn't open mock data")
 			}
 			signalAPI = signal.NewMockSignal(cfg.UserNumber, b)
 		}

@@ -8,7 +8,7 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	cfg := &DefaultConfig
+	cfg := DefaultConfig()
 	dir := os.TempDir()
 	path := filepath.Join(dir, "tempconfig.yaml")
 	err := cfg.SaveAs(path)

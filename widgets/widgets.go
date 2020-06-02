@@ -340,7 +340,7 @@ func (cl *ContactListPanel) Update() {
 	// TODO: don't
 	sorted := cl.siggo.Contacts().SortedByIndex()
 	convs := cl.siggo.Conversations()
-	log.Debug("sorted contacts: %v", sorted)
+	log.Debugf("sorted contacts: %v", sorted)
 	for i, c := range sorted {
 		id := c.String()
 		line := fmt.Sprintf("%s\n", id)
@@ -449,7 +449,7 @@ func NewSearchInput(parent *SearchPanel) *SearchInput {
 	si.SetLabel("> ")
 	si.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Setup keys
-		log.Debug("Key Event <SEARCH>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		log.Debugf("Key Event <SEARCH>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
 		switch event.Key() {
 		case tcell.KeyESC:
 			si.parent.Close()
@@ -608,7 +608,7 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 func FancyCompose() string {
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "siggo-compose-")
 	if err != nil {
-		log.Error("failed to create temp file for compose: %v", err)
+		log.Errorf("failed to create temp file for compose: %v", err)
 		return ""
 	}
 	editor := os.Getenv("EDITOR")
@@ -623,12 +623,12 @@ func FancyCompose() string {
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	if err = cmd.Run(); err != nil {
-		log.Error("failed to start editor: %v", err)
+		log.Errorf("failed to start editor: %v", err)
 		return ""
 	}
 	b, err := ioutil.ReadFile(fname)
 	if err != nil {
-		log.Error("failed to read temp file: %v", err)
+		log.Errorf("failed to read temp file: %v", err)
 		return ""
 	}
 	return string(b)
