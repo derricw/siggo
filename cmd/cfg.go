@@ -110,7 +110,7 @@ var cfgAliasCmd = &cobra.Command{
 		} else if len(args) == 2 {
 			// set alias for contact
 			contactName := args[0]
-			alias := strings.ToLower(args[1])
+			alias := args[1]
 			cfg, err := model.GetConfig()
 			if err != nil {
 				log.Fatalf("couldn't load current config: %s", err)
