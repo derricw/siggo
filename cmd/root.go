@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
@@ -48,11 +49,20 @@ func setupMock(mockFileName string, cfg *model.Config) *signal.MockSignal {
 	return signal.NewMockSignal(cfg.UserNumber, b)
 }
 
+func hasSignalCLI() bool {
+	_, err := exec.LookPath("signal-cli")
+	return err == nil
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "siggo",
 	Short: "siggo is a terminal gui for signal-cli",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		if !hasSignalCLI() {
+			log.Fatalf("failed to find signal-cli in PATH")
+		}
+
 		cfg, err := model.GetConfig()
 		if err != nil {
 			log.Fatalf("failed to read config @ %s", model.DefaultConfigPath())
