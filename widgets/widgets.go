@@ -192,7 +192,7 @@ func (c *ChatWindow) ContactUp() {
 	if prevContact != c.currentContact {
 		err := c.SetCurrentContact(prevContact)
 		if err != nil {
-			log.Errorf("%s", err)
+			c.SetErrorStatus(err)
 		}
 	}
 }
@@ -203,7 +203,7 @@ func (c *ChatWindow) ContactDown() {
 	if nextContact != c.currentContact {
 		err := c.SetCurrentContact(nextContact)
 		if err != nil {
-			log.Errorf("%s", err)
+			c.SetErrorStatus(err)
 		}
 	}
 }
@@ -212,14 +212,20 @@ func (c *ChatWindow) ContactDown() {
 // we send it as a message to the current conversation.
 func (c *ChatWindow) Compose() {
 	msg := ""
+	var err error
+
 	success := c.app.Suspend(func() {
-		msg = FancyCompose()
+		msg, err = FancyCompose()
 	})
 	// need to sleep because there seems to be a race condition in tview
 	// https://github.com/rivo/tview/issues/244
 	time.Sleep(100 * time.Millisecond)
 	if !success {
-		log.Error("failed to suspend siggo")
+		c.SetErrorStatus(fmt.Errorf("failed to suspend siggo"))
+		return
+	}
+	if err != nil {
+		c.SetErrorStatus(err)
 		return
 	}
 	if msg != "" {
@@ -517,11 +523,10 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 				w.ContactUp()
 				return nil
 			case 105: // i
-				if event.Modifiers() == 4 { // ALT+i
-					w.Compose()
-				} else {
-					w.InsertMode()
-				}
+				w.InsertMode()
+				return nil
+			case 73: // I
+				w.Compose()
 				return nil
 			case 113: // q
 				if event.Modifiers() == 4 { // ALT+q
@@ -615,16 +620,14 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 }
 
 // FancyCompose opens up EDITOR and composes a big fancy message.
-func FancyCompose() string {
+func FancyCompose() (string, error) {
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "siggo-compose-")
 	if err != nil {
-		log.Errorf("failed to create temp file for compose: %v", err)
-		return ""
+		return "", fmt.Errorf("failed to create temp file for compose: %v", err)
 	}
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
-		log.Error("cannot compose: no EDITOR set in environment")
-		return ""
+		return "", fmt.Errorf("cannot compose: no $EDITOR set in environment")
 	}
 	fname := tmpFile.Name()
 	defer os.Remove(fname)
@@ -633,13 +636,11 @@ func FancyCompose() string {
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	if err = cmd.Run(); err != nil {
-		log.Errorf("failed to start editor: %v", err)
-		return ""
+		return "", fmt.Errorf("failed to start editor: %v", err)
 	}
 	b, err := ioutil.ReadFile(fname)
 	if err != nil {
-		log.Errorf("failed to read temp file: %v", err)
-		return ""
+		return "", fmt.Errorf("failed to read temp file: %v", err)
 	}
-	return string(b)
+	return string(b), nil
 }
