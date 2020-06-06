@@ -63,6 +63,7 @@ type MessageCallback func(*Message) error
 type SentCallback func(*Message) error
 type ReceiptCallback func(*Message) error
 type ReceivedCallback func(*Message) error
+type ErrorCallback func(error)
 
 // Exec invokes signal-cli with the supplied args and returns the bytes that writes to stdout
 func Exec(args ...string) ([]byte, error) {
@@ -84,6 +85,7 @@ type Signal struct {
 	sentCallbacks     []SentCallback
 	receiptCallbacks  []ReceiptCallback
 	receivedCallbacks []ReceivedCallback
+	errorCallbacks    []ErrorCallback
 }
 
 // OnMessage registers a callback to be executed upon any incoming message of any kind (that we
@@ -107,6 +109,17 @@ func (s *Signal) OnReceipt(callback ReceiptCallback) {
 // OnReceived registers a callback to be executed whenver an incoming message is received.
 func (s *Signal) OnReceived(callback ReceivedCallback) {
 	s.receivedCallbacks = append(s.receivedCallbacks, callback)
+}
+
+// OnError registers a callback to be executed whenever an error occurs.
+func (s *Signal) OnError(callback ErrorCallback) {
+	s.errorCallbacks = append(s.errorCallbacks, callback)
+}
+
+func (s *Signal) publishError(err error) {
+	for _, cb := range s.errorCallbacks {
+		cb(err)
+	}
 }
 
 // Version returns the current version of signal-cli
@@ -170,6 +183,7 @@ func (s *Signal) Daemon() error {
 	}
 	err = cmd.Start()
 	if err != nil {
+		s.publishError(err)
 		return err
 	}
 
@@ -196,6 +210,7 @@ func (s *Signal) Send(dest, msg string) (int64, error) {
 	cmd := exec.Command("signal-cli", "-u", s.uname, "send", dest, "-m", msg)
 	out, err := cmd.Output()
 	if err != nil {
+		s.publishError(err)
 		return 0, err
 	}
 	ID, err := strconv.Atoi(string(out[:len(out)-1])) //strip newline
@@ -213,6 +228,7 @@ func (s *Signal) SendDbus(dest, msg string) (int64, error) {
 	cmd := exec.Command("signal-cli", "--dbus", "send", dest, "-m", msg)
 	out, err := cmd.Output()
 	if err != nil {
+		s.publishError(err)
 		return 0, err
 	}
 	ID, err := strconv.Atoi(string(out[:len(out)-1])) //strip newline
@@ -278,6 +294,7 @@ func (s *Signal) ProcessWire(wire []byte) error {
 	err := json.Unmarshal(wire, &msg)
 	if err != nil {
 		log.Printf("failed to unmarshal message: %s - %s", wire, err)
+		return err
 	}
 	for _, cb := range s.msgCallbacks {
 		err = cb(&msg)

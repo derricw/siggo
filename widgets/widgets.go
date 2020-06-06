@@ -29,6 +29,7 @@ var urlRegex = regexp.MustCompile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,2
 
 type ConvInfo map[*model.Contact]*model.Conversation
 
+// ChatWindow is the main panel for the UI.
 type ChatWindow struct {
 	// todo: maybe use Flex instead of Grid?
 	*tview.Grid
@@ -48,6 +49,7 @@ type ChatWindow struct {
 	goKeybinds        func(*tcell.EventKey) *tcell.EventKey
 }
 
+// InsertMode enters insert mode
 func (c *ChatWindow) InsertMode() {
 	log.Debug("INSERT MODE")
 	c.app.SetFocus(c.sendPanel)
@@ -55,6 +57,7 @@ func (c *ChatWindow) InsertMode() {
 	c.mode = InsertMode
 }
 
+// YankMode enters yank mode
 func (c *ChatWindow) YankMode() {
 	log.Debug("YANK MODE")
 	c.conversationPanel.SetBorderColor(tcell.ColorOrange)
@@ -62,6 +65,7 @@ func (c *ChatWindow) YankMode() {
 	c.SetInputCapture(c.yankKeybinds)
 }
 
+// NormalMode enters normal mode
 func (c *ChatWindow) NormalMode() {
 	log.Debug("NORMAL MODE")
 	c.app.SetFocus(c)
@@ -115,6 +119,7 @@ func (c *ChatWindow) YankLastLink() {
 	}
 }
 
+// ShowContactSearch opens a contact search panel
 func (c *ChatWindow) ShowContactSearch() {
 	log.Debug("SHOWING CONTACT SEARCH")
 	p := NewContactSearch(c)
@@ -124,6 +129,7 @@ func (c *ChatWindow) ShowContactSearch() {
 	c.app.SetFocus(p)
 }
 
+// HideSearch hides any current search panel
 func (c *ChatWindow) HideSearch() {
 	log.Debug("HIDING SEARCH")
 	c.RemoveItem(c.searchPanel)
@@ -131,22 +137,26 @@ func (c *ChatWindow) HideSearch() {
 	c.app.SetFocus(c)
 }
 
+// ShowStatusBar shows the bottom status bar
 func (c *ChatWindow) ShowStatusBar() {
 	c.SetRows(0, 3, 1)
 	c.AddItem(c.statusBar, 2, 0, 1, 2, 0, 0, false)
 }
 
+// HideStatusBar stops showing the status bar
 func (c *ChatWindow) HideStatusBar() {
-	c.RemoveItem(c.statusBar)
+	c.RemoveItem(c.statusBar) // do we actually need to do this?
 	c.SetRows(0, 3)
 }
 
+// SetStatus shows a status message on the status bar
 func (c *ChatWindow) SetStatus(statusMsg string) {
 	log.Info(statusMsg)
 	c.statusBar.SetText(statusMsg)
 	c.ShowStatusBar()
 }
 
+// SetErrorStatus shows an error status in the status bar
 func (c *ChatWindow) SetErrorStatus(err error) {
 	log.Errorf("%s", err)
 	c.statusBar.SetText(fmt.Sprintf("🔥%s", err))
@@ -600,7 +610,7 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			w.update()
 		})
 	}
-
+	siggo.ErrorEvent = w.SetErrorStatus
 	return w
 }
 

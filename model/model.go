@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/derricw/siggo/signal"
+	"github.com/gen2brain/beeep"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -260,6 +261,7 @@ type SignalAPI interface {
 	OnReceived(signal.ReceivedCallback)
 	OnReceipt(signal.ReceiptCallback)
 	OnSent(signal.SentCallback)
+	OnError(signal.ErrorCallback)
 }
 
 type Siggo struct {
@@ -269,7 +271,8 @@ type Siggo struct {
 	contactOrder  []*Contact
 	signal        SignalAPI
 
-	NewInfo func(*Conversation)
+	NewInfo    func(*Conversation)
+	ErrorEvent func(error)
 }
 
 // Send sends a message to a contact.
@@ -315,6 +318,10 @@ func (s *Siggo) newContact(number string) *Contact {
 	}
 	s.contacts[number] = contact
 	return contact
+}
+
+func (s *Siggo) handleError(err error) {
+	s.ErrorEvent(err)
 }
 
 // Receive
@@ -398,6 +405,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 	}
 	conv.AddMessage(message)
 	s.NewInfo(conv)
+	s.sendNotification(c.String(), message.Content, "")
 	return nil
 }
 
@@ -442,6 +450,19 @@ func (s *Siggo) onReceipt(msg *signal.Message) error {
 	return nil
 }
 
+func (s *Siggo) sendNotification(title, content, iconPath string) {
+	if !s.config.DesktopNotifications {
+		return
+	}
+	if !s.config.DesktopNotificationsShowMessage {
+		content = ""
+	}
+	err := beeep.Notify(title, content, iconPath) // title, msg, icon
+	if err != nil {
+		log.Error("failed to send desktop notification: %v", err)
+	}
+}
+
 // Conversations returns the current converstation book
 func (s *Siggo) Conversations() map[*Contact]*Conversation {
 	return s.conversations
@@ -480,7 +501,8 @@ func NewSiggo(sig SignalAPI, config *Config) *Siggo {
 		config: config,
 		signal: sig,
 
-		NewInfo: func(*Conversation) {}, // noop
+		NewInfo:    func(*Conversation) {}, // noop
+		ErrorEvent: func(error) {},         // noop
 	}
 	s.init()
 	//sig.OnMessage(s.?)
@@ -488,6 +510,7 @@ func NewSiggo(sig SignalAPI, config *Config) *Siggo {
 	sig.OnSent(s.onSent)
 	sig.OnReceived(s.onReceived)
 	sig.OnReceipt(s.onReceipt)
+	sig.OnError(s.handleError)
 	return s
 }
 
