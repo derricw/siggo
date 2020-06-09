@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -19,8 +20,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// SignalDataDir - signal-cli saves user data here
-var SignalDataDir string = ".local/share/signal-cli/data"
+// SignalDir is where signal-cli saves its local data
+var SignalDir string = ".local/share/signal-cli"
+var SignalDataDir string = fmt.Sprintf("%s/data", SignalDir)
+var SignalAttachmentsDir string = fmt.Sprintf("%s/attachments", SignalDir)
+var SignalAvatarsDir string = fmt.Sprintf("%s/avatars", SignalDir)
+
+// GetSignalFolder returns the user's signal-cli local storage
+func GetSignalFolder() (string, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(usr.HomeDir, SignalDir), nil
+}
 
 // SignalContact is the data signal-cli saves for each contact
 // in SignalDataDir/<phonenumber>

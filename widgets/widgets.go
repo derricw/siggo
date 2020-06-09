@@ -5,15 +5,18 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/atotto/clipboard"
 	"github.com/derricw/siggo/model"
+	"github.com/derricw/siggo/signal"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
+	"github.com/skratchdot/open-golang/open"
 )
 
 type Mode int
@@ -22,6 +25,7 @@ const (
 	NormalMode Mode = iota
 	InsertMode
 	YankMode
+	OpenMode
 )
 
 // stolen from suckoverflow
@@ -65,6 +69,14 @@ func (c *ChatWindow) YankMode() {
 	c.SetInputCapture(c.yankKeybinds)
 }
 
+// OpenMode enters open mode
+func (c *ChatWindow) OpenMode() {
+	log.Debug("OPEN MODE")
+	c.conversationPanel.SetBorderColor(tcell.ColorBlueViolet)
+	c.mode = OpenMode
+	c.SetInputCapture(c.openKeybinds)
+}
+
 // NormalMode enters normal mode
 func (c *ChatWindow) NormalMode() {
 	log.Debug("NORMAL MODE")
@@ -102,13 +114,34 @@ func (c *ChatWindow) YankLastMsg() {
 	c.SetStatus(fmt.Sprintf("📋%s", content))
 }
 
+func (c *ChatWindow) getLinks() []string {
+	toSearch := c.conversationPanel.GetText(true)
+	return urlRegex.FindAllString(toSearch, -1)
+}
+
+func (c *ChatWindow) getAttachments() []*signal.Attachment {
+	a := make([]*signal.Attachment, 0)
+	conv, err := c.currentConversation()
+	if err != nil {
+		return a
+	}
+	// TODO: make siggo.Conversation keep a list of attachments
+	// so that we don't have to search for them like this
+	for _, ID := range conv.MessageOrder {
+		msg := conv.Messages[ID]
+		if len(msg.Attachments) > 0 {
+			a = append(a, msg.Attachments...)
+		}
+	}
+	return a
+}
+
 // YankLastLink copies the last link in a converstaion to the clipboard
 func (c *ChatWindow) YankLastLink() {
 	c.NormalMode()
-	toSearch := c.conversationPanel.GetText(true)
-	matches := urlRegex.FindAllString(toSearch, -1)
-	if len(matches) > 0 {
-		last := matches[len(matches)-1]
+	links := c.getLinks()
+	if len(links) > 0 {
+		last := links[len(links)-1]
 		if err := clipboard.WriteAll(last); err != nil {
 			c.SetErrorStatus(err)
 			return
@@ -116,6 +149,49 @@ func (c *ChatWindow) YankLastLink() {
 		c.SetStatus(fmt.Sprintf("📋%s", last))
 	} else {
 		c.SetStatus(fmt.Sprintf("📋<NO MATCHES>"))
+	}
+}
+
+// OpenLastLink opens the last link that is finds in the conversation
+// TODO: solution for browsing/opening any attachment
+func (c *ChatWindow) OpenLastLink() {
+	c.NormalMode()
+	links := c.getLinks()
+	if len(links) > 0 {
+		last := links[len(links)-1]
+		err := open.Run(last)
+		if err != nil {
+			c.SetErrorStatus(fmt.Errorf("<OPEN FAILED: %v>", err))
+		} else {
+			c.SetStatus(fmt.Sprintf("📂%s", last))
+		}
+	} else {
+		c.SetStatus(fmt.Sprintf("📂<NO MATCHES>"))
+	}
+}
+
+// OpenLastAttachment opens the last attachment that it finds in the conversation
+// TODO: solution for browsing/opening any attachment
+func (c *ChatWindow) OpenLastAttachment() {
+	c.NormalMode()
+	attachments := c.getAttachments()
+	if len(attachments) > 0 {
+		last := attachments[len(attachments)-1]
+		// XXX: this is dumb. lets get this path a diff way, through some abstraction in siggo
+		folder, err := signal.GetSignalFolder()
+		if err != nil {
+			c.SetErrorStatus(err)
+			return
+		}
+		path := filepath.Join(folder, "attachments", last.ID)
+		err = open.Run(path)
+		if err != nil {
+			c.SetErrorStatus(fmt.Errorf("📎<OPEN FAILED: %v>", err))
+		} else {
+			c.SetStatus(fmt.Sprintf("📎%s", path))
+		}
+	} else {
+		c.SetStatus(fmt.Sprintf("📎<NO MATCHES>"))
 	}
 }
 
@@ -536,6 +612,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 121: // y
 				w.YankMode()
 				return nil
+			case 111: // o
+				w.OpenMode()
+				return nil
 			}
 		// pass some events on to the conversation panel
 		case tcell.KeyPgUp:
@@ -576,6 +655,24 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 				return nil
 			case 108: // l
 				w.YankLastLink()
+				return nil
+			}
+		case tcell.KeyESC:
+			w.NormalMode()
+			return nil
+		}
+		return event
+	}
+	w.openKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
+		log.Debugf("Key Event <OPEN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 108: // l
+				w.OpenLastLink()
+				return nil
+			case 111: // o
+				w.OpenLastAttachment()
 				return nil
 			}
 		case tcell.KeyESC:

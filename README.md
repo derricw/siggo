@@ -43,7 +43,7 @@ bin/siggo
 * `y` - Yank Mode
   * `yy` - Yank Last Message (from current conversation)
   * `yl` - Yank Last URL
-* `o` - Open Mode (doesn't work yet)
+* `o` - Open Mode
   * `oo` - Open Last Attachment
   * `ol` - Open Last Link
 * `ESC` - Normal Mode
@@ -58,6 +58,12 @@ Note: Matches on contact name, so if you have two people with the same name they
 ```
 siggo cfg color "Leloo Dallas" DarkViolet
 siggo cfg color "Ruby Rhod" "#00FF00"
+```
+
+### Configure Contact Aliases
+
+```
+siggo cfg alias "John Smith" "Ruby Rhod"
 ```
 
 ### Development
@@ -77,11 +83,13 @@ This way you can test without sending yourself messages.
 
 Here is a list of things that are currently broken.
 * Send read receipts for incoming messages (`signal-cli` limitation, but might be fixed soon)
-* Open mode
 
 Here is a list of features I'd like to add soonish.
-* Attachments support
+* Better Attachments Support
+  * Sending attachments
+  * Opening attachments (besides the most recent)
 * gui configuration
+  * colors and border styles
 * let user re-sort contact list (for example alphabetically)
 * command to go to next contact with message waiting
 * command to go to contact with fuzzy matching

@@ -9,6 +9,7 @@ require (
 	github.com/mdp/qrterminal/v3 v3.0.0
 	github.com/rivo/tview v0.0.0-20200329194346-7cc182c5846e
 	github.com/sirupsen/logrus v1.2.0
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/cobra v0.0.7
 	github.com/stretchr/testify v1.5.1
 	gopkg.in/yaml.v2 v2.2.8
