@@ -49,22 +49,9 @@ bin/siggo
 * `ESC` - Normal Mode
 * `ALT+Q` - Quit
 
-### Configure Contact Colors
+### Configuration
 
-Supports W3C and hex.
-
-Note: Matches on contact name, so if you have two people with the same name they will get the same color.
-
-```
-siggo cfg color "Leloo Dallas" DarkViolet
-siggo cfg color "Ruby Rhod" "#00FF00"
-```
-
-### Configure Contact Aliases
-
-```
-siggo cfg alias "John Smith" "Ruby Rhod"
-```
+See the configuration README [here](config/README.md).
 
 ### Development
 
