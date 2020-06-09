@@ -14,6 +14,7 @@ import (
 func init() {
 	cfgCmd.AddCommand(cfgColorCmd)
 	cfgCmd.AddCommand(cfgAliasCmd)
+	cfgCmd.AddCommand(cfgDefaultCmd)
 	rootCmd.AddCommand(cfgCmd)
 }
 
@@ -27,6 +28,17 @@ var cfgCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("couldn't load config: %s\n", err)
 		}
+		cfg.Print()
+	},
+}
+
+var cfgDefaultCmd = &cobra.Command{
+	Use:   "default",
+	Short: "writes default configuration to stdout",
+	Long:  ``,
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		cfg := model.DefaultConfig()
 		cfg.Print()
 	},
 }
