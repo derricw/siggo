@@ -306,6 +306,7 @@ func (c *ChatWindow) Compose() {
 		return
 	}
 	if msg != "" {
+		msg = emoji.Sprint(msg)
 		contact := c.currentContact
 		c.ShowTempSentMsg(msg)
 		go c.siggo.Send(msg, contact)
