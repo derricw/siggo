@@ -2,6 +2,8 @@
 
 Siggo keeps a configuration `yaml` file at `~/.siggo/config.yml`. You can and should edit it manually, but there are some helper commands for certain things.
 
+Most optional behavior is opt-in (disabled by default). For example, siggo does not save messages unless you turn on `save_messages`.
+
 ### Print Current Configuration to stdout
 
 ```

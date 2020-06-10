@@ -55,6 +55,8 @@ See the configuration README [here](config/README.md).
 
 ### Development
 
+Honestly the code is a hot mess right now, and I don't recommend trying to contribute yet. But I will absolutely take a PR if you want to throw one at me.
+
 If you save the output of signal-cli like so:
 
 ```

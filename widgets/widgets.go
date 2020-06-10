@@ -14,6 +14,7 @@ import (
 	"github.com/derricw/siggo/model"
 	"github.com/derricw/siggo/signal"
 	"github.com/gdamore/tcell"
+	"github.com/kyokomi/emoji"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
@@ -368,6 +369,17 @@ func (s *SendPanel) Defocus() {
 	s.parent.NormalMode()
 }
 
+// emojify is a custom input change handler that provides emoji support
+func (s *SendPanel) emojify(input string) {
+	if strings.HasSuffix(input, ":") {
+		//log.Printf("emojify: %s", input)
+		emojified := emoji.Sprint(input)
+		if emojified != input {
+			s.SetText(emojified)
+		}
+	}
+}
+
 func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 	s := &SendPanel{
 		InputField: tview.NewInputField(),
@@ -379,6 +391,7 @@ func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 	s.SetBorder(true)
 	//s.SetFieldBackgroundColor(tcell.ColorDefault)
 	s.SetFieldBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
+	s.SetChangedFunc(s.emojify)
 	s.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyESC:

@@ -27,11 +27,15 @@ var fakeSendReceipt *Message = &Message{
 	},
 }
 
-// MockSignal implements siggo's SignalAPI interface
+// MockSignal implements siggo's SignalAPI interface without actually calling signal-cli for anything
 type MockSignal struct {
 	*Signal
 	exampleData []byte
 	userNumber  string
+}
+
+func (ms *MockSignal) Version() (string, error) {
+	return "0.6.7", nil
 }
 
 func (ms *MockSignal) Send(dest, msg string) (int64, error) {
