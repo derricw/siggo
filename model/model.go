@@ -464,7 +464,7 @@ func (s *Siggo) sendNotification(title, content, iconPath string) {
 	}
 	err := beeep.Notify(title, content, iconPath) // title, msg, icon
 	if err != nil {
-		log.Error("failed to send desktop notification: %v", err)
+		log.Errorf("failed to send desktop notification: %v", err)
 	}
 }
 
