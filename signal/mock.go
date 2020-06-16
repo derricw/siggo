@@ -34,12 +34,13 @@ type MockSignal struct {
 	userNumber  string
 }
 
+// Version just returns the last known compatible version of signal-cli
 func (ms *MockSignal) Version() (string, error) {
 	return "0.6.7", nil
 }
 
+// Send just sends a fake message, by putting it on the "wire"
 func (ms *MockSignal) Send(dest, msg string) (int64, error) {
-	// send a fake message, just puts in on the "wire"
 	timestamp := time.Now().Unix()
 	fakeWire := fakeSendReceipt
 	fakeWire.Envelope.Timestamp = timestamp

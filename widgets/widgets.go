@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -178,19 +177,19 @@ func (c *ChatWindow) OpenLastAttachment() {
 	attachments := c.getAttachments()
 	if len(attachments) > 0 {
 		last := attachments[len(attachments)-1]
-		// XXX: this is dumb. lets get this path a diff way, through some abstraction in siggo
-		folder, err := signal.GetSignalFolder()
+		path, err := last.Path()
 		if err != nil {
-			c.SetErrorStatus(err)
+			c.SetErrorStatus(fmt.Errorf("📎failed to find attachment: %v", err))
 			return
 		}
-		path := filepath.Join(folder, "attachments", last.ID)
-		err = open.Run(path)
-		if err != nil {
-			c.SetErrorStatus(fmt.Errorf("📎<OPEN FAILED: %v>", err))
-		} else {
-			c.SetStatus(fmt.Sprintf("📎%s", path))
-		}
+		go func() {
+			err = open.Run(path)
+			if err != nil {
+				c.SetErrorStatus(fmt.Errorf("📎<OPEN FAILED: %v>", err))
+			} else {
+				c.SetStatus(fmt.Sprintf("📎%s", path))
+			}
+		}()
 	} else {
 		c.SetStatus(fmt.Sprintf("📎<NO MATCHES>"))
 	}
@@ -249,6 +248,7 @@ func (c *ChatWindow) currentConversation() (*model.Conversation, error) {
 	}
 }
 
+// SetCurrentContact sets the active contact
 func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
 	c.currentContact = contact
 	c.contactsPanel.Update()
@@ -401,13 +401,8 @@ func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 		case tcell.KeyEnter:
 			s.Send()
 			return nil
-		case tcell.KeyRune:
-			switch event.Rune() {
-			case 113: // q
-				if event.Modifiers() == 4 { // ALT+q
-					s.parent.Quit()
-				}
-			}
+		case tcell.KeyCtrlQ:
+			s.parent.Quit()
 		case tcell.KeyCtrlL:
 			s.SetText("")
 			return nil
@@ -618,11 +613,6 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 73: // I
 				w.Compose()
 				return nil
-			case 113: // q
-				if event.Modifiers() == 4 { // ALT+q
-					w.Quit()
-				}
-				return nil
 			case 121: // y
 				w.YankMode()
 				return nil
@@ -630,7 +620,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 				w.OpenMode()
 				return nil
 			}
-		// pass some events on to the conversation panel
+			// pass some events on to the conversation panel
+		case tcell.KeyCtrlQ:
+			w.Quit()
 		case tcell.KeyPgUp:
 			convInputHandler(event, func(p tview.Primitive) {})
 			return nil
@@ -671,6 +663,8 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 				w.YankLastLink()
 				return nil
 			}
+		case tcell.KeyCtrlQ:
+			w.Quit()
 		case tcell.KeyESC:
 			w.NormalMode()
 			return nil
@@ -689,6 +683,8 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 				w.OpenLastAttachment()
 				return nil
 			}
+		case tcell.KeyCtrlQ:
+			w.Quit()
 		case tcell.KeyESC:
 			w.NormalMode()
 			return nil

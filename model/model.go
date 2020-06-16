@@ -108,6 +108,7 @@ func (m *Message) String(color string) string {
 	} else if m.IsRead == true {
 		data = fmt.Sprintf("[%s::]%s[-::]", color, data)
 	}
+	// show attachments
 	for _, a := range m.Attachments {
 		aMsg := fmt.Sprintf(" 📎| %s | %s | %dB\n", a.Filename, a.ContentType, a.Size)
 		data = fmt.Sprintf("%s%s", data, aMsg)
@@ -115,6 +116,7 @@ func (m *Message) String(color string) string {
 	return data
 }
 
+// Coversation is a contact and its associated messages
 type Conversation struct {
 	Contact       *Contact
 	Messages      map[int64]*Message
@@ -126,6 +128,7 @@ type Conversation struct {
 	hasNewData bool
 }
 
+// String renders the conversation to a single string
 func (c *Conversation) String() string {
 	out := ""
 	for _, k := range c.MessageOrder {
@@ -134,10 +137,12 @@ func (c *Conversation) String() string {
 	return out
 }
 
+// Color returns the configured color highlight for incoming messages
 func (c *Conversation) Color() string {
 	return c.color
 }
 
+// AddMessage appends a message to the conversation
 func (c *Conversation) AddMessage(message *Message) {
 	c.addMessage(message)
 }

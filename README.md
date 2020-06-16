@@ -47,11 +47,23 @@ bin/siggo
   * `oo` - Open Last Attachment
   * `ol` - Open Last Link
 * `ESC` - Normal Mode
-* `ALT+Q` - Quit
+* `CTRL+Q` - Quit (`CTRL+C` _should_ also work)
 
 ### Configuration
 
 See the configuration README [here](config/README.md).
+
+### Message History
+
+Message saving is an opt-in feature.
+
+If you enable it, conversations are stored in plain text in `~/.siggo/conversations`.
+
+Delete them like this:
+
+```
+rm ~/.siggo/conversations/*
+```
 
 ### Development
 

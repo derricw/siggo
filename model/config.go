@@ -35,6 +35,7 @@ func DefaultConfig() *Config {
 	}
 }
 
+// Config includes both siggo and UI config
 type Config struct {
 	UserNumber string `yaml:"user_number"`
 	UserName   string `yaml:"user_name"`

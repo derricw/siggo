@@ -1,4 +1,5 @@
-// Package signal provides a minimal wrapper for the signal-cli functionality that we need.
+// Package signal provides a minimal wrapper for the signal-cli functionality and data
+// types that we need.
 package signal
 
 import (
