@@ -4,6 +4,8 @@
 
 A terminal gui for signal-cli, written in Go.
 
+![Alt text](media/screenshot.jpg?raw=true "Screenshot")
+
 ### Dependencies
 
 * [signal-cli](https://github.com/AsamK/signal-cli). (>=0.6.7)
