@@ -1,6 +1,7 @@
 # siggo
 [![GoDoc](https://godoc.org/github.com/derricw/siggo?status.svg)](https://godoc.org/github.com/derricw/siggo)
 [![Go Report](https://goreportcard.com/badge/github.com/derricw/siggo)](https://goreportcard.com/badge/github.com/derricw/siggo)
+[![Actions Status](https://github.com/derricw/siggo/workflows/test/badge.svg)](https://github.com/derricw/siggo/actions)
 
 A terminal gui for signal-cli, written in Go.
 
