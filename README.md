@@ -22,6 +22,10 @@ signal-cli -u +<yourphonenumber> receive --json
 ```
 You are now ready to use `siggo`.
 
+### Security
+
+siggo shells out to `signal-cli`, so if that worries you, don't use it, for now. I have lofty goals of eventually replacing this with [libsignal](https://github.com/signalapp/libsignal-protocol-c).
+
 ### Build
 
 ```
@@ -82,6 +86,11 @@ You can then run siggo using it as mock input. This is useful for development an
 bin/siggo -m example_messages.json
 ```
 This way you can test without sending yourself messages.
+
+### Similar Projects / Inspiration
+
+* [signal-curses](https://github.com/jwoglom/signal-curses)
+* [scli](https://github.com/isamert/scli)
 
 ### Roadmap
 
