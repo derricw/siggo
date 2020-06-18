@@ -64,12 +64,12 @@ See the configuration README [here](config/README.md).
 
 Message saving is an opt-in feature.
 
-If you enable it, conversations are stored in plain text in `~/.siggo/conversations`.
+If you enable it, conversations are stored in plain text in `~/.local/share/siggo/conversations`.
 
 Delete them like this:
 
 ```
-rm ~/.siggo/conversations/*
+rm ~/.local/share/siggo/conversations/*
 ```
 
 ### Development
