@@ -29,7 +29,7 @@ func init() {
 
 func initLogging(cfg *model.Config) {
 	if cfg.LogFilePath == "" {
-		cfg.LogFilePath = defaultLogPath
+		cfg.LogFilePath = model.LogPath()
 	}
 	logFile, err := os.Create(cfg.LogFilePath)
 	if err != nil {
@@ -65,14 +65,14 @@ var rootCmd = &cobra.Command{
 
 		cfg, err := model.GetConfig()
 		if err != nil {
-			log.Fatalf("failed to read config @ %s", model.DefaultConfigPath())
+			log.Fatalf("failed to read config @ %s", model.ConfigPath())
+		}
+
+		if cfg.UserNumber == "" {
+			log.Fatalf("no user phone number configured @ %s", model.ConfigPath())
 		}
 
 		initLogging(cfg)
-
-		if cfg.UserNumber == "" {
-			log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
-		}
 
 		var signalAPI model.SignalAPI = signal.NewSignal(cfg.UserNumber)
 		if mock != "" {

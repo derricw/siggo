@@ -19,10 +19,10 @@ var sendCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := model.GetConfig()
 		if err != nil {
-			log.Fatalf("failed to read config @ %s", model.DefaultConfigPath())
+			log.Fatalf("failed to read config @ %s", model.ConfigPath())
 		}
 		if cfg.UserNumber == "" {
-			log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
+			log.Fatalf("no user phone number configured @ %s", model.ConfigPath())
 		}
 		sig := signal.NewSignal(cfg.UserNumber)
 		ID, err := sig.Send(args[0], args[1])

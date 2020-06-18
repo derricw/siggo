@@ -21,10 +21,10 @@ var contactsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := model.GetConfig()
 		if err != nil {
-			log.Fatalf("failed to read config @ %s", model.DefaultConfigPath())
+			log.Fatalf("failed to read config @ %s", model.ConfigPath())
 		}
 		if cfg.UserNumber == "" {
-			log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
+			log.Fatalf("no user phone number configured @ %s", model.ConfigPath())
 		}
 		signalAPI := signal.NewSignal(cfg.UserNumber)
 		s := model.NewSiggo(signalAPI, cfg)

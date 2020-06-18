@@ -34,6 +34,7 @@ type Contact struct {
 	Alias  string
 }
 
+// String returns a string to display for this contact. Priority is Alias > Name > Number.
 func (c *Contact) String() string {
 	if c.Alias != "" {
 		return c.Alias
