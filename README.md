@@ -13,7 +13,7 @@ A terminal gui for signal-cli, written in Go.
 
 siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian) or `libmatthew-unix-java` (AUR) is required.
 
-Install signal-cli and put it somewhere safe in your path. You will need to follow its instructions to either [link](https://github.com/AsamK/signal-cli/wiki/Linking-other-devices-(Provisioning)) or [register](https://github.com/AsamK/signal-cli#usage) your device. The `siggo link <phonenumber>` subcommand has been added to make linking more user-friendly, but has not been tested sufficiently. Be sure to prefix with `+` and country code (for example `+12345678901`).
+Install signal-cli and put it somewhere safe in your path. You will need to follow its instructions to either [link](https://github.com/AsamK/signal-cli/wiki/Linking-other-devices-(Provisioning)) or [register](https://github.com/AsamK/signal-cli#usage) your device. The `siggo link <phonenumber> <devicename>` subcommand has been added to make linking more user-friendly, but has not been tested sufficiently. Be sure to prefix with `+` and country code (for example `+12345678901`).
 
 When setup is finished, you should be able to run without error:
 
