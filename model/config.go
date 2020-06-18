@@ -10,21 +10,44 @@ import (
 )
 
 var (
-	configFilename string = "config.yml"
-	configFolder   string = ".siggo"
+	configFilename   string = "config.yml"
+	configFolderName string = "siggo"
+	dataFolderName   string = "siggo"
 )
 
-func DefaultConfigFolder() string {
+// FindConfigFolder returns $XDG_CONFIG_HOME/siggo/ if it exists, otherwise returns $HOME/.config/siggo/
+func FindConfigFolder() string {
+	XDGConfig := os.Getenv("XDG_CONFIG_HOME")
+	if XDGConfig != "" {
+		return filepath.Join(XDGConfig, configFolderName)
+	}
 	d, _ := os.UserHomeDir()
-	return filepath.Join(d, configFolder)
+	return filepath.Join(d, ".config", configFolderName)
 }
 
-func DefaultConfigPath() string {
-	return filepath.Join(DefaultConfigFolder(), configFilename)
+// ConfigPath returns the config file path
+func ConfigPath() string {
+	return filepath.Join(FindConfigFolder(), configFilename)
 }
 
+// FindDataFolder returns $XDG_DATA_HOME if it exists, otherwise returns $HOME/.local/share/siggo/
+func FindDataFolder() string {
+	XDGData := os.Getenv("XDG_DATA_HOME")
+	if XDGData != "" {
+		return filepath.Join(XDGData, dataFolderName)
+	}
+	d, _ := os.UserHomeDir()
+	return filepath.Join(d, ".local", "share", dataFolderName)
+}
+
+// ConversationFolder returns the folder where conversations are saved
 func ConversationFolder() string {
-	return filepath.Join(DefaultConfigFolder(), "conversations")
+	return filepath.Join(FindDataFolder(), "conversations")
+}
+
+// LogPath returns the log file path
+func LogPath() string {
+	return filepath.Join(FindDataFolder(), "siggo.log")
 }
 
 func DefaultConfig() *Config {
@@ -73,7 +96,7 @@ func (c *Config) SaveAs(path string) error {
 
 // Save saves the config to the default location
 func (c *Config) Save() error {
-	return c.SaveAs(DefaultConfigPath())
+	return c.SaveAs(ConfigPath())
 }
 
 // Print pretty-prints the configuration
@@ -112,7 +135,7 @@ func NewConfigFile(path string) (*Config, error) {
 // GetConfig returns the current configuration from the
 // default config location, creates a new one if it isn't there
 func GetConfig() (*Config, error) {
-	path := DefaultConfigPath()
+	path := ConfigPath()
 	if _, err := os.Stat(path); err != nil {
 		// config doesn't exist so lets save default
 		return NewConfigFile(path)

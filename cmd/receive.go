@@ -18,12 +18,12 @@ var receiveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := model.GetConfig()
 		if err != nil {
-			log.Fatalf("failed to read config @ %s", model.DefaultConfigPath())
+			log.Fatalf("failed to read config @ %s", model.ConfigPath())
 		}
 		initLogging(cfg)
 
 		if cfg.UserNumber == "" {
-			log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
+			log.Fatalf("no user phone number configured @ %s", model.ConfigPath())
 		}
 
 		var signalAPI model.SignalAPI = signal.NewSignal(cfg.UserNumber)

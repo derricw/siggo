@@ -75,7 +75,7 @@ var cfgColorCmd = &cobra.Command{
 				log.Fatalf("couldn't load current config: %s", err)
 			}
 			if cfg.UserNumber == "" {
-				log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
+				log.Fatalf("no user phone number configured @ %s", model.ConfigPath())
 			}
 			// make sure contact exists?
 			// make sure color exists
@@ -128,7 +128,7 @@ var cfgAliasCmd = &cobra.Command{
 				log.Fatalf("couldn't load current config: %s", err)
 			}
 			if cfg.UserNumber == "" {
-				log.Fatalf("no user phone number configured @ %s", model.DefaultConfigPath())
+				log.Fatalf("no user phone number configured @ %s", model.ConfigPath())
 			}
 			// set alias and save config
 			cfg.ContactAliases[contactName] = alias
