@@ -1,11 +1,18 @@
 # siggo
 [![GoDoc](https://godoc.org/github.com/derricw/siggo?status.svg)](https://godoc.org/github.com/derricw/siggo)
 [![Go Report](https://goreportcard.com/badge/github.com/derricw/siggo)](https://goreportcard.com/badge/github.com/derricw/siggo)
-![Test](https://github.com/derricw/siggo/workflows/Test/badge.svg)
+![Build](https://github.com/derricw/siggo/workflows/Test/badge.svg)
 
 A terminal gui for signal-cli, written in Go.
 
 ![Alt text](media/screenshot.jpg?raw=true "Screenshot")
+
+### Features
+
+* vim-style ux
+* useful for quick messages or use $EDITOR to compose fancy ones
+* emoji support, just use colons, like `:cat:`
+* configurable contact [colors](config/README.md#configure-contact-colors)
 
 ### Dependencies
 
