@@ -4,6 +4,10 @@ Siggo keeps a configuration `yaml` file at `~/.config/siggo/config.yml`. You can
 
 Most optional behavior is opt-in (disabled by default). For example, siggo does not save messages unless you turn on `save_messages`.
 
+### Phone number config
+
+Be sure to prefix your phone number with `+` and your country code, just like `signal-cli` requires.
+
 ### Print Current Configuration to stdout
 
 ```
