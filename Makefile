@@ -5,13 +5,13 @@ BIN_NAME=siggo
 REPO_NAME=siggo
 BIN_DIR := $(CURDIR)/bin
 INSTALL_DIR := $${HOME}/.local/bin
-VERSION  := $(shell grep "Version =" version/version.go | sed -E 's/.*"(.+)"$$/\1/')
+VERSION  := $(shell git describe --abbrev=0 --tags)
 GIT_COMMIT= $(shell git rev-parse HEAD)
 BUILD_DATE= $(shell date '+%Y-%m-%d-%H:%M:%S')
 GOFMT := gofmt
 GO     = go
 
-default: fmt test build
+default: fmt test build release
 
 test:
 	go test -v -coverprofile "cov.cov" -covermode=count ./...
@@ -36,3 +36,7 @@ fmt: ; $(info running gofmt...) @ ## Run gofmt on all source files
 
 install: build $(INSTALL_DIR)
 	cp ${BIN_DIR}/${BIN_NAME} ${INSTALL_DIR}/${BIN_NAME}
+
+release: build
+	mkdir -p dist
+	tar czf dist/siggo-${VERSION}-amd64.tar.gz bin/${BIN_NAME}
