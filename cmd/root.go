@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
@@ -70,6 +71,10 @@ var rootCmd = &cobra.Command{
 
 		if cfg.UserNumber == "" {
 			log.Fatalf("no user phone number configured @ %s", model.ConfigPath())
+		}
+
+		if !strings.HasPrefix(cfg.UserNumber, "+") {
+			cfg.UserNumber = fmt.Sprintf("+%s", cfg.UserNumber)
 		}
 
 		initLogging(cfg)
