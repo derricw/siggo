@@ -61,6 +61,7 @@ bin/siggo
   * `oo` - Open Last Attachment
   * `ol` - Open Last Link
 * `ESC` - Normal Mode
+* `CTRL+N` - Move to next conversation with unread messages
 * `CTRL+Q` - Quit (`CTRL+C` _should_ also work)
 
 ### Configuration
@@ -111,9 +112,10 @@ Here is a list of features I'd like to add soonish.
 * gui configuration
   * colors and border styles
 * let user re-sort contact list (for example alphabetically)
-* command to go to next contact with message waiting
 * command to go to contact with fuzzy matching
 * groups support
-* use dbus to send instead of signal-cli, to avoid having to spin up the JVM (might also fix the read receipt issue)
+* use dbus to send instead of signal-cli, to avoid having to spin up the JVM
 * there is still some data that i'm dropping on the floor
+* weechat/BitlBee plugin that uses the siggo model without the UI
 * wouldn't tests be neat?
+* signal-cli seems to delete old attachments after a while. maybe I should move them somewhere where they wont get deleted?
