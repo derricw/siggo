@@ -250,7 +250,7 @@ func (c *ChatWindow) currentConversation() (*model.Conversation, error) {
 
 // SetCurrentContact sets the active contact
 func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
-	log.Debug("setting current contact to: %v", contact)
+	log.Debugf("setting current contact to: %v", contact)
 	c.currentContact = contact
 	c.contactsPanel.GotoContact(contact)
 	c.contactsPanel.Render()
