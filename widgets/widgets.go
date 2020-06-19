@@ -250,8 +250,10 @@ func (c *ChatWindow) currentConversation() (*model.Conversation, error) {
 
 // SetCurrentContact sets the active contact
 func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
+	log.Debugf("setting current contact to: %v", contact)
 	c.currentContact = contact
-	c.contactsPanel.Update()
+	c.contactsPanel.GotoContact(contact)
+	c.contactsPanel.Render()
 	conv, err := c.currentConversation()
 	if err != nil {
 		return err
@@ -259,6 +261,20 @@ func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
 	c.conversationPanel.Update(conv)
 	conv.CaughtUp()
 	c.conversationPanel.ScrollToEnd()
+	return nil
+}
+
+// NextUnreadMessage searches for the next conversation with unread messages and makes that the
+// active conversation.
+func (c *ChatWindow) NextUnreadMessage() error {
+	for contact, conv := range c.siggo.Conversations() {
+		if conv.HasNewMessage {
+			err := c.SetCurrentContact(contact)
+			if err != nil {
+				c.SetErrorStatus(err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -341,7 +357,7 @@ func (c *ChatWindow) Quit() {
 func (c *ChatWindow) update() {
 	convs := c.siggo.Conversations()
 	if convs != nil {
-		c.contactsPanel.Update()
+		c.contactsPanel.Render()
 		currentConv, ok := convs[c.currentContact]
 		if ok {
 			c.conversationPanel.Update(currentConv)
@@ -434,7 +450,31 @@ func (cl *ContactListPanel) Previous() *model.Contact {
 	return cl.sortedContacts[cl.currentIndex]
 }
 
-func (cl *ContactListPanel) Update() {
+// GotoIndex goes to a particular contact index and return the Contact. Negative indexing is
+// allowed.
+func (cl *ContactListPanel) GotoIndex(index int) *model.Contact {
+	if index < 0 {
+		return cl.GotoIndex(len(cl.sortedContacts) - index)
+	}
+	if index >= len(cl.sortedContacts) {
+		return cl.GotoIndex(-1)
+	}
+	cl.currentIndex = index
+	return cl.sortedContacts[index]
+}
+
+// GotoContact goes to a particular contact.
+// TODO: constant time way to do this?
+func (cl *ContactListPanel) GotoContact(contact *model.Contact) {
+	for i, c := range cl.sortedContacts {
+		if contact == c {
+			cl.GotoIndex(i)
+		}
+	}
+}
+
+// Render re-renders the contact list
+func (cl *ContactListPanel) Render() {
 	data := ""
 	log.Debug("updating contact panel...")
 	// this is dumb, we re-sort every update
@@ -647,6 +687,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			return nil
 		case tcell.KeyCtrlT:
 			w.ShowContactSearch()
+			return nil
+		case tcell.KeyCtrlN:
+			w.NextUnreadMessage()
 			return nil
 		}
 		return event
