@@ -117,6 +117,17 @@ func (m *Message) String(color string) string {
 	return data
 }
 
+// AddAttachments currently only is used to track attachments we sent to other people, so that
+// they show up in the GUI.
+func (m *Message) AddAttachments(paths []string) {
+	if m.Attachments == nil {
+		m.Attachments = make([]*signal.Attachment, 0)
+	}
+	for _, path := range paths {
+		m.Attachments = append(m.Attachments, &signal.Attachment{Filename: path})
+	}
+}
+
 // Coversation is a contact and its associated messages
 type Conversation struct {
 	Contact       *Contact
@@ -125,8 +136,9 @@ type Conversation struct {
 	HasNewMessage bool
 	// hasNewData tracks whether new data has been added
 	// since the last save to disk
-	color      string
-	hasNewData bool
+	color             string
+	hasNewData        bool
+	stagedAttachments []string
 }
 
 // String renders the conversation to a single string
@@ -173,14 +185,24 @@ func (c *Conversation) LastMessage() *Message {
 	return nil
 }
 
-// PopMessage just removes and returns the last message, if it exists
-func (c *Conversation) PopMessage() {
-	nMessage := len(c.MessageOrder)
-	if nMessage > 0 {
-		lastMsg := c.MessageOrder[nMessage-1]
-		c.MessageOrder = c.MessageOrder[:nMessage-1]
-		delete(c.Messages, lastMsg)
+// StageAttachment attaches a file to be sent in the next message
+func (c *Conversation) AddAttachment(path string) error {
+	if _, err := os.Stat(path); err != nil {
+		// no file there...
+		return err
 	}
+	c.stagedAttachments = append(c.stagedAttachments, path)
+	return nil
+}
+
+// ClearAttachments removes any staged attachments
+func (c *Conversation) ClearAttachments() {
+	c.stagedAttachments = []string{}
+}
+
+// NumAttachments returns the number of staged attachments
+func (c *Conversation) NumAttachments() int {
+	return len(c.stagedAttachments)
 }
 
 // CaughtUp iterates back through the messages of the conversation marking the un-read ones
@@ -256,12 +278,14 @@ func NewConversation(contact *Contact) *Conversation {
 		Messages:      make(map[int64]*Message),
 		MessageOrder:  make([]int64, 0),
 		HasNewMessage: false,
+
+		stagedAttachments: make([]string, 0),
 	}
 }
 
 type SignalAPI interface {
 	Send(string, string) (int64, error)
-	SendDbus(string, string) (int64, error)
+	SendDbus(string, string, ...string) (int64, error)
 	Receive() error
 	ReceiveForever()
 	OnReceived(signal.ReceivedCallback)
@@ -290,6 +314,7 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 		IsDelivered: false,
 		IsRead:      false,
 		FromSelf:    true,
+		Attachments: make([]*signal.Attachment, 0),
 	}
 	conv, ok := s.conversations[contact]
 	if !ok {
@@ -297,7 +322,7 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 		conv = s.newConversation(contact)
 	}
 	// finally send the message
-	ID, err := s.signal.SendDbus(contact.Number, msg)
+	ID, err := s.signal.SendDbus(contact.Number, msg, conv.stagedAttachments...)
 	if err != nil {
 		message.Content = fmt.Sprintf("FAILED TO SEND: %s ERROR: %v", message.Content, err)
 		s.NewInfo(conv)
@@ -306,6 +331,8 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 	// use the official timestamp on success
 	message.Timestamp = ID
 	conv.CaughtUp()
+	message.AddAttachments(conv.stagedAttachments)
+	conv.ClearAttachments()
 	conv.AddMessage(message)
 	s.NewInfo(conv)
 	log.Infof("successfully sent message %s with timestamp: %d", message.Content, message.Timestamp)

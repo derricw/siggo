@@ -57,7 +57,7 @@ func (ms *MockSignal) Send(dest, msg string) (int64, error) {
 	return timestamp, nil
 }
 
-func (ms *MockSignal) SendDbus(dest, msg string) (int64, error) {
+func (ms *MockSignal) SendDbus(dest, msg string, attachments ...string) (int64, error) {
 	return ms.Send(dest, msg)
 }
 

@@ -60,6 +60,11 @@ type Attachment struct {
 
 // Path returns the full path to an attachment file
 func (a *Attachment) Path() (string, error) {
+	if a.ID == "" {
+		// TODO: save our own copy of the attachment with our own ID
+		// for now, just return the path where we attached it
+		return a.Filename, nil
+	}
 	folder, err := GetSignalFolder()
 	if err != nil {
 		return "", err
