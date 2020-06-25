@@ -51,6 +51,7 @@ bin/siggo
 * `k` - Scroll Up
 * `J` - Next Contact
 * `K` - Previous Contact
+* `a` - Attach file (sent with next message)
 * `i` - Insert Mode
   * `CTRL+L` - Clear input field
 * `I` - Compose (opens $EDITOR and lets you make a fancy message)
@@ -107,7 +108,6 @@ Here is a list of things that are currently broken.
 
 Here is a list of features I'd like to add soonish.
 * Better Attachments Support
-  * Sending attachments
   * Opening attachments (besides the most recent)
 * gui configuration
   * colors and border styles
