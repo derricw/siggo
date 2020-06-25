@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -45,6 +47,7 @@ type ChatWindow struct {
 	contactsPanel     *ContactListPanel
 	conversationPanel *ConversationPanel
 	searchPanel       tview.Primitive
+	commandPanel      tview.Primitive
 	statusBar         *StatusBar
 	app               *tview.Application
 	normalKeybinds    func(*tcell.EventKey) *tcell.EventKey
@@ -153,7 +156,7 @@ func (c *ChatWindow) YankLastLink() {
 }
 
 // OpenLastLink opens the last link that is finds in the conversation
-// TODO: solution for browsing/opening any attachment
+// TODO: solution for browsing/opening any link
 func (c *ChatWindow) OpenLastLink() {
 	c.NormalMode()
 	links := c.getLinks()
@@ -213,6 +216,24 @@ func (c *ChatWindow) HideSearch() {
 	c.app.SetFocus(c)
 }
 
+// ShowAttachInput opens a commandPanel to choose a file to attach
+func (c *ChatWindow) ShowAttachInput() {
+	log.Debug("SHOWING CONTACT SEARCH")
+	p := NewAttachInput(c)
+	c.commandPanel = p
+	c.SetRows(0, 3, 1)
+	c.AddItem(p, 2, 0, 1, 2, 0, 0, false)
+	c.app.SetFocus(p)
+}
+
+// HideCommandInput hides any current CommandInput panel
+func (c *ChatWindow) HideCommandInput() {
+	log.Debug("HIDING COMMAND INPUT")
+	c.RemoveItem(c.commandPanel)
+	c.SetRows(0, 3)
+	c.app.SetFocus(c)
+}
+
 // ShowStatusBar shows the bottom status bar
 func (c *ChatWindow) ShowStatusBar() {
 	c.SetRows(0, 3, 1)
@@ -260,6 +281,7 @@ func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
 	}
 	c.conversationPanel.Update(conv)
 	conv.CaughtUp()
+	c.sendPanel.Update()
 	c.conversationPanel.ScrollToEnd()
 	return nil
 }
@@ -380,16 +402,39 @@ func (s *SendPanel) Send() {
 	go s.siggo.Send(msg, contact)
 	log.Infof("sent message: %s to contact: %s", msg, contact)
 	s.SetText("")
+	s.SetLabel("")
+}
+
+func (s *SendPanel) Clear() {
+	s.SetText("")
+	conv, err := s.parent.currentConversation()
+	if err != nil {
+		return
+	}
+	conv.ClearAttachments()
+	s.SetLabel("")
 }
 
 func (s *SendPanel) Defocus() {
 	s.parent.NormalMode()
 }
 
+func (s *SendPanel) Update() {
+	conv, err := s.parent.currentConversation()
+	if err != nil {
+		return
+	}
+	nAttachments := conv.NumAttachments()
+	if nAttachments > 0 {
+		s.SetLabel(fmt.Sprintf("📎(%d): ", nAttachments))
+	} else {
+		s.SetLabel("")
+	}
+}
+
 // emojify is a custom input change handler that provides emoji support
 func (s *SendPanel) emojify(input string) {
 	if strings.HasSuffix(input, ":") {
-		//log.Printf("emojify: %s", input)
 		emojified := emoji.Sprint(input)
 		if emojified != input {
 			s.SetText(emojified)
@@ -420,7 +465,7 @@ func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 		case tcell.KeyCtrlQ:
 			s.parent.Quit()
 		case tcell.KeyCtrlL:
-			s.SetText("")
+			s.Clear()
 			return nil
 		}
 		return event
@@ -601,6 +646,57 @@ func NewSearchInput(parent *SearchPanel) *SearchInput {
 	return si
 }
 
+// CommandInput is an input field that appears at the bottom of the window and allows for various
+// commands
+type CommandInput struct {
+	*tview.InputField
+	parent *ChatWindow
+}
+
+// AttachInput is a command input that selects an attachment and attaches it to the current
+// conversation to be sent in the next message.
+func NewAttachInput(parent *ChatWindow) *CommandInput {
+	ci := &CommandInput{
+		InputField: tview.NewInputField(),
+		parent:     parent,
+	}
+	ci.SetLabel("📎: ")
+	ci.SetText("~/")
+	ci.SetFieldBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
+	ci.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		// Setup keys
+		log.Debugf("Key Event <ATTACH>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyESC:
+			ci.parent.HideCommandInput()
+			return nil
+		case tcell.KeyTAB:
+			ci.SetText(CompletePath(ci.GetText()))
+			return nil
+		case tcell.KeyEnter:
+			path := ci.GetText()
+			ci.parent.HideCommandInput()
+			if path == "" {
+				return nil
+			}
+			conv, err := ci.parent.currentConversation()
+			if err != nil {
+				ci.parent.SetErrorStatus(fmt.Errorf("couldn't find conversation: %v", err))
+				return nil
+			}
+			err = conv.AddAttachment(path)
+			if err != nil {
+				ci.parent.SetErrorStatus(fmt.Errorf("failed to attach: %s - %v", path, err))
+				return nil
+			}
+			ci.parent.sendPanel.Update()
+			return nil
+		}
+		return event
+	})
+	return ci
+}
+
 type StatusBar struct {
 	*tview.TextView
 	parent *ChatWindow
@@ -658,6 +754,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 				return nil
 			case 111: // o
 				w.OpenMode()
+				return nil
+			case 97: // o
+				w.ShowAttachInput()
 				return nil
 			}
 			// pass some events on to the conversation panel
@@ -793,4 +892,53 @@ func FancyCompose() (string, error) {
 		return "", fmt.Errorf("failed to read temp file: %v", err)
 	}
 	return string(b), nil
+}
+
+// CompletePath autocompletes a path stub
+func CompletePath(path string) string {
+	if path == "" {
+		return ""
+	}
+	if path[0] == '~' {
+		usr, err := user.Current()
+		if err != nil {
+			return ""
+		}
+		path = usr.HomeDir + path[1:]
+	}
+	matches, err := filepath.Glob(path + "*")
+	if err != nil || matches == nil || len(matches) == 0 {
+		return path
+	}
+	if len(matches) == 1 {
+		path = matches[0]
+	} else if !strings.HasSuffix(path, "/") {
+		path = GetSharedPrefix(matches...)
+	}
+	stat, err := os.Stat(path)
+	if err != nil {
+		return path
+	}
+	if stat.IsDir() {
+		if !strings.HasSuffix(path, "/") {
+			return path + "/"
+		}
+	}
+	return path
+}
+
+// GetSharedPrefix finds the prefix shared by any number of strings
+// Is there a more efficient way to do this?
+func GetSharedPrefix(s ...string) string {
+	var out strings.Builder
+	for i := 0; i < len(s[0]); i++ {
+		c := s[0][i]
+		for _, str := range s {
+			if str[i] != c {
+				return out.String()
+			}
+		}
+		out.WriteByte(c)
+	}
+	return out.String()
 }

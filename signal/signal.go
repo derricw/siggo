@@ -235,11 +235,17 @@ func (s *Signal) Send(dest, msg string) (int64, error) {
 }
 
 // SendDbus does the same thing as Send but it goes through a running daemon.
-func (s *Signal) SendDbus(dest, msg string) (int64, error) {
+func (s *Signal) SendDbus(dest, msg string, attachments ...string) (int64, error) {
 	if !strings.HasPrefix(dest, "+") {
 		dest = fmt.Sprintf("+%s", dest)
 	}
-	cmd := exec.Command("signal-cli", "--dbus", "send", dest, "-m", msg)
+	args := []string{"--dbus", "send", dest, "-m", msg}
+	if len(attachments) > 0 {
+		// how do I do this in one line?
+		args = append(args, "-a")
+		args = append(args, attachments...)
+	}
+	cmd := exec.Command("signal-cli", args...)
 	out, err := cmd.Output()
 	if err != nil {
 		s.publishError(err)

@@ -1,2 +1,5 @@
 bin
 examples.json
+dist
+cov.cov
+coverage.html
