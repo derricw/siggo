@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -403,6 +405,16 @@ func (s *SendPanel) Send() {
 	s.SetLabel("")
 }
 
+func (s *SendPanel) Clear() {
+	s.SetText("")
+	conv, err := s.parent.currentConversation()
+	if err != nil {
+		return
+	}
+	conv.ClearAttachments()
+	s.SetLabel("")
+}
+
 func (s *SendPanel) Defocus() {
 	s.parent.NormalMode()
 }
@@ -414,7 +426,7 @@ func (s *SendPanel) Update() {
 	}
 	nAttachments := conv.NumAttachments()
 	if nAttachments > 0 {
-		s.SetLabel(fmt.Sprintf("📎(%d):", nAttachments))
+		s.SetLabel(fmt.Sprintf("📎(%d): ", nAttachments))
 	} else {
 		s.SetLabel("")
 	}
@@ -423,7 +435,6 @@ func (s *SendPanel) Update() {
 // emojify is a custom input change handler that provides emoji support
 func (s *SendPanel) emojify(input string) {
 	if strings.HasSuffix(input, ":") {
-		//log.Printf("emojify: %s", input)
 		emojified := emoji.Sprint(input)
 		if emojified != input {
 			s.SetText(emojified)
@@ -454,7 +465,7 @@ func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 		case tcell.KeyCtrlQ:
 			s.parent.Quit()
 		case tcell.KeyCtrlL:
-			s.SetText("")
+			s.Clear()
 			return nil
 		}
 		return event
@@ -650,6 +661,8 @@ func NewAttachInput(parent *ChatWindow) *CommandInput {
 		parent:     parent,
 	}
 	ci.SetLabel("📎: ")
+	ci.SetText("~/")
+	ci.SetFieldBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
 	ci.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Setup keys
 		log.Debugf("Key Event <ATTACH>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
@@ -658,7 +671,7 @@ func NewAttachInput(parent *ChatWindow) *CommandInput {
 			ci.parent.HideCommandInput()
 			return nil
 		case tcell.KeyTAB:
-			// TODO: this is the part where we tab complete
+			ci.SetText(CompletePath(ci.GetText()))
 			return nil
 		case tcell.KeyEnter:
 			path := ci.GetText()
@@ -879,4 +892,53 @@ func FancyCompose() (string, error) {
 		return "", fmt.Errorf("failed to read temp file: %v", err)
 	}
 	return string(b), nil
+}
+
+// CompletePath autocompletes a path stub
+func CompletePath(path string) string {
+	if path == "" {
+		return ""
+	}
+	if path[0] == '~' {
+		usr, err := user.Current()
+		if err != nil {
+			return ""
+		}
+		path = usr.HomeDir + path[1:]
+	}
+	matches, err := filepath.Glob(path + "*")
+	if err != nil || matches == nil || len(matches) == 0 {
+		return path
+	}
+	if len(matches) == 1 {
+		path = matches[0]
+	} else if !strings.HasSuffix(path, "/") {
+		path = GetSharedPrefix(matches...)
+	}
+	stat, err := os.Stat(path)
+	if err != nil {
+		return path
+	}
+	if stat.IsDir() {
+		if !strings.HasSuffix(path, "/") {
+			return path + "/"
+		}
+	}
+	return path
+}
+
+// GetSharedPrefix finds the prefix shared by any number of strings
+// Is there a more efficient way to do this?
+func GetSharedPrefix(s ...string) string {
+	var out strings.Builder
+	for i := 0; i < len(s[0]); i++ {
+		c := s[0][i]
+		for _, str := range s {
+			if str[i] != c {
+				return out.String()
+			}
+		}
+		out.WriteByte(c)
+	}
+	return out.String()
 }
