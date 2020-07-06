@@ -1,0 +1,95 @@
+package widgets
+
+import (
+	"fmt"
+
+	"github.com/derricw/siggo/model"
+	"github.com/rivo/tview"
+	log "github.com/sirupsen/logrus"
+)
+
+type ContactListPanel struct {
+	*tview.TextView
+	siggo          *model.Siggo
+	parent         *ChatWindow
+	sortedContacts []*model.Contact
+	currentIndex   int
+}
+
+func (cl *ContactListPanel) Next() *model.Contact {
+	if cl.currentIndex < len(cl.sortedContacts)-1 {
+		cl.currentIndex++
+	}
+	return cl.sortedContacts[cl.currentIndex]
+}
+
+func (cl *ContactListPanel) Previous() *model.Contact {
+	if cl.currentIndex > 0 {
+		cl.currentIndex--
+	}
+	return cl.sortedContacts[cl.currentIndex]
+}
+
+// GotoIndex goes to a particular contact index and return the Contact. Negative indexing is
+// allowed.
+func (cl *ContactListPanel) GotoIndex(index int) *model.Contact {
+	if index < 0 {
+		return cl.GotoIndex(len(cl.sortedContacts) - index)
+	}
+	if index >= len(cl.sortedContacts) {
+		return cl.GotoIndex(-1)
+	}
+	cl.currentIndex = index
+	return cl.sortedContacts[index]
+}
+
+// GotoContact goes to a particular contact.
+// TODO: constant time way to do this?
+func (cl *ContactListPanel) GotoContact(contact *model.Contact) {
+	for i, c := range cl.sortedContacts {
+		if contact == c {
+			cl.GotoIndex(i)
+		}
+	}
+}
+
+// Render re-renders the contact list
+func (cl *ContactListPanel) Render() {
+	data := ""
+	log.Debug("updating contact panel...")
+	// this is dumb, we re-sort every update
+	// TODO: don't
+	sorted := cl.siggo.Contacts().SortedByIndex()
+	convs := cl.siggo.Conversations()
+	log.Debugf("sorted contacts: %v", sorted)
+	for i, c := range sorted {
+		id := c.String()
+		line := fmt.Sprintf("%s\n", id)
+		color := convs[c].Color()
+		if cl.currentIndex == i {
+			line = fmt.Sprintf("[%s::r]%s[-::-]", color, line)
+			cl.currentIndex = i
+		} else if convs[c].HasNewMessage {
+			line = fmt.Sprintf("[%s::b]*%s[-::-]", color, line)
+		} else {
+			line = fmt.Sprintf("[%s::]%s[-::]", color, line)
+		}
+		data += line
+	}
+	cl.sortedContacts = sorted
+	cl.SetText(data)
+}
+
+// NewContactListPanel creates a new contact list widget
+func NewContactListPanel(parent *ChatWindow, siggo *model.Siggo) *ContactListPanel {
+	c := &ContactListPanel{
+		TextView: tview.NewTextView(),
+		siggo:    siggo,
+		parent:   parent,
+	}
+	c.SetDynamicColors(true)
+	c.SetTitle("contacts")
+	c.SetTitleAlign(0)
+	c.SetBorder(true)
+	return c
+}

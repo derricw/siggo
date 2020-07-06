@@ -46,6 +46,7 @@ func (c *Contact) String() string {
 }
 
 type ContactList map[PhoneNumber]*Contact
+type ConvInfo map[*Contact]*Conversation
 
 // List returns a list of contacts (in random order)
 func (cl ContactList) List() []*Contact {
