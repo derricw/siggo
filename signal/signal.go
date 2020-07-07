@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	//"syscall"
 	"time"
 
 	qr "github.com/mdp/qrterminal/v3"
