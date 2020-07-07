@@ -119,7 +119,7 @@ Here is a list of features I'd like to add soonish.
 * command to go to contact with fuzzy matching
 * groups support
 * use dbus to send instead of signal-cli, to avoid having to spin up the JVM
-* there is still some data that i'm dropping on the floor
+* there is still some data that i'm dropping on the floor (I believe it to be the "typing indicator" messages)
 * weechat/BitlBee plugin that uses the siggo model without the UI
 * wouldn't tests be neat?
 * signal-cli seems to delete old attachments after a while. maybe I should move them somewhere where they wont get deleted?

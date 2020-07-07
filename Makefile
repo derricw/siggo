@@ -29,6 +29,11 @@ build: $(BIN_DIR)
 		-ldflags "-X ${GIT_PATH}/${REPO_NAME}/version.GitCommit=${GIT_COMMIT} -X ${GIT_PATH}/${REPO_NAME}/version.BuildDate=${BUILD_DATE}" \
 		-o $(BIN_DIR)/$(BIN_NAME)
 
+build_darwin: $(BIN_DIR)
+	GOOS=darwin go build -v \
+		-ldflags "-X ${GIT_PATH}/${REPO_NAME}/version.GitCommit=${GIT_COMMIT} -X ${GIT_PATH}/${REPO_NAME}/version.BuildDate=${BUILD_DATE}" \
+		-o $(BIN_DIR)/$(BIN_NAME)
+
 fmt: ; $(info running gofmt...) @ ## Run gofmt on all source files
 	@ret=0 && for d in $$($(GO) list -f '{{.Dir}}' ./...); do \
 		$(GOFMT) -l -w $$d/*.go || ret$$? ; \
@@ -37,6 +42,11 @@ fmt: ; $(info running gofmt...) @ ## Run gofmt on all source files
 install: build $(INSTALL_DIR)
 	cp ${BIN_DIR}/${BIN_NAME} ${INSTALL_DIR}/${BIN_NAME}
 
-release: build
+release_linux: build
 	mkdir -p dist
-	tar czf dist/siggo-${VERSION}-amd64.tar.gz bin/${BIN_NAME}
+	tar czf dist/siggo-${VERSION}-linux-amd64.tar.gz bin/${BIN_NAME}
+
+release_darwin: build_darwin
+	mkdir -p dist
+	tar czf dist/siggo-${VERSION}-darwin-amd64.tar.gz bin/${BIN_NAME}
+
