@@ -13,6 +13,7 @@ A terminal gui for signal-cli, written in Go.
 * useful for quick messages or use $EDITOR to compose fancy ones
 * emoji support, just use colons, like `:cat:`
 * configurable contact [colors](config/README.md#configure-contact-colors)
+* can use [fzf](https://github.com/junegunn/fzf) to fuzzy-find files to attach
 
 ### Dependencies
 
@@ -52,6 +53,7 @@ bin/siggo
 * `J` - Next Contact
 * `K` - Previous Contact
 * `a` - Attach file (sent with next message)
+* `A` - Use fzf to attach a file
 * `i` - Insert Mode
   * `CTRL+L` - Clear input field
 * `I` - Compose (opens $EDITOR and lets you make a fancy message)
