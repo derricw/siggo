@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
+	//"syscall"
 	"time"
 
 	qr "github.com/mdp/qrterminal/v3"
@@ -189,11 +189,17 @@ func (s *Signal) ReceiveForever() {
 // Daemon starts the dbus daemon and receives forever.
 func (s *Signal) Daemon() error {
 	cmd := exec.Command("signal-cli", "-u", s.uname, "daemon", "--json")
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		//Pdeathsig: syscall.SIGKILL,
-		//Setsid:  true,
-		//Setpgid: true,
-	}
+
+	//  This is the only way to ensure that the signal-cli daemon is killed when we get
+	//  SIGKILL, but it isn't available on MacOS, so we leave it commented out for now.
+	//  This means that SIGKILL will leave a zombie signal-cli daemon running that will have to be
+	//  killed manually. I have tried unsuccessfully to find a cross-platform solution for this.
+	//  Other signals, like SIGTERM and SIGINT should be handled correctly.
+
+	//cmd.SysProcAttr = &syscall.SysProcAttr{
+	//Pdeathsig: syscall.SIGKILL,
+	//}
+
 	outReader, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
@@ -359,7 +365,7 @@ func (s *Signal) ProcessWire(wire []byte) error {
 func (s *Signal) Close() {
 	if s.daemon != nil {
 		log.Debug("killing signal-cli daemon...")
-		_ = s.daemon.Process.Kill()
+		_ = s.daemon.Process.Signal(os.Interrupt)
 	}
 }
 

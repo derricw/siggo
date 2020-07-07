@@ -528,7 +528,7 @@ func (s *Siggo) Quit() {
 	if s.config.SaveMessages {
 		s.SaveConversations()
 	}
-	s.signal.Close() // should kill daemon?
+	s.signal.Close() // kills the signal-cli daemon
 }
 
 // NewSiggo creates a new model
