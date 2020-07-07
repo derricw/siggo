@@ -1,7 +1,13 @@
 package widgets
 
 import (
+	"bytes"
 	"fmt"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
+	"strings"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
@@ -15,7 +21,7 @@ type CommandInput struct {
 	parent *ChatWindow
 }
 
-// AttachInput is a command input that selects an attachment and attaches it to the current
+// NewAttachInput is a command input that selects an attachment and attaches it to the current
 // conversation to be sent in the next message.
 func NewAttachInput(parent *ChatWindow) *CommandInput {
 	ci := &CommandInput{
@@ -57,4 +63,27 @@ func NewAttachInput(parent *ChatWindow) *CommandInput {
 		return event
 	})
 	return ci
+}
+
+// FZFFile opens up FZF and fuzzy-searches for a file
+func FZFFile() (string, error) {
+	cmd := exec.Command("fzf")
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	buf := bytes.NewBuffer([]byte{})
+	cmd.Stdout = buf
+	usr, err := user.Current()
+	if err != nil {
+		// if we can find home, we run fzf from there
+		return "", err
+	}
+	cmd.Dir = usr.HomeDir
+
+	if err = cmd.Run(); err != nil && cmd.ProcessState.ExitCode() != 130 {
+		// exit code 130 is when we cancel FZF
+		return "", fmt.Errorf("failed to find a file: %s", err)
+	}
+	f := strings.TrimSpace(buf.String())
+	path := filepath.Join(usr.HomeDir, f)
+	return path, err
 }

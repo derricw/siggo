@@ -350,6 +350,41 @@ func (c *ChatWindow) Compose() {
 	}
 }
 
+// FancyAttach opens FZF and selects a file to attach
+func (c *ChatWindow) FancyAttach() {
+	path := ""
+	var err error
+	_, err = exec.LookPath("fzf")
+	if err != nil {
+		c.SetErrorStatus(fmt.Errorf("failed to find in PATH: fzf"))
+		return
+	}
+	success := c.app.Suspend(func() {
+		path, err = FZFFile()
+	})
+	time.Sleep(100 * time.Millisecond)
+	if !success {
+		c.SetErrorStatus(fmt.Errorf("failed to suspend siggo"))
+		return
+	}
+	if err != nil {
+		c.SetErrorStatus(err)
+	}
+	if path != "" {
+		log.Errorf("attaching path: %s", path)
+		conv, err := c.currentConversation()
+		if err != nil {
+			c.SetErrorStatus(err)
+			return
+		}
+		err = conv.AddAttachment(path)
+		if err != nil {
+			c.SetErrorStatus(err)
+		}
+		c.sendPanel.Update()
+	}
+}
+
 // ShowTempSentMsg shows a temporary message when a message is sent but before delivery.
 // Only displayed for the second or two after a message is sent.
 func (c *ChatWindow) ShowTempSentMsg(msg string) {
@@ -498,8 +533,11 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 111: // o
 				w.OpenMode()
 				return nil
-			case 97: // o
+			case 97: // a
 				w.ShowAttachInput()
+				return nil
+			case 65: // a
+				w.FancyAttach()
 				return nil
 			}
 			// pass some events on to the conversation panel
