@@ -98,7 +98,7 @@ var rootCmd = &cobra.Command{
 		sigChan := make(chan os.Signal, 1)
 		ossig.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGINT,
 			syscall.SIGTERM, syscall.SIGKILL, syscall.SIGABRT, syscall.SIGIOT,
-			syscall.SIGQUIT) // doesn't catch syscall.SIGKILL but might as well include it
+			syscall.SIGQUIT, syscall.SIGSEGV) // doesn't catch syscall.SIGKILL but might as well include it
 		go func() {
 			s := <-sigChan
 			log.Infof("caught signal: %s", s)
