@@ -5,7 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	ossig "os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
@@ -83,6 +85,7 @@ var rootCmd = &cobra.Command{
 		if mock != "" {
 			signalAPI = setupMock(mock, cfg)
 		}
+		defer signalAPI.Close()
 
 		s := model.NewSiggo(signalAPI, cfg)
 
@@ -91,8 +94,20 @@ var rootCmd = &cobra.Command{
 		app := tview.NewApplication()
 		chatWindow := widgets.NewChatWindow(s, app)
 
+		// also want to make sure to handle signals
+		sigChan := make(chan os.Signal, 1)
+		ossig.Notify(sigChan, os.Interrupt, os.Kill, syscall.SIGINT,
+			syscall.SIGTERM, syscall.SIGKILL, syscall.SIGABRT, syscall.SIGIOT,
+			syscall.SIGQUIT, syscall.SIGSEGV) // doesn't catch syscall.SIGKILL but might as well include it
+		go func() {
+			s := <-sigChan
+			log.Infof("caught signal: %s", s)
+			chatWindow.Quit()
+		}()
+
 		// finally, start the tview app
 		if err := app.SetRoot(chatWindow, true).SetFocus(chatWindow).Run(); err != nil {
+			signalAPI.Close() // redundant?
 			panic(err)
 		}
 		// clean up when we're done
@@ -102,7 +117,6 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 }
