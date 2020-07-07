@@ -94,7 +94,7 @@ var rootCmd = &cobra.Command{
 
 		// finally, start the tview app
 		if err := app.SetRoot(chatWindow, true).SetFocus(chatWindow).Run(); err != nil {
-			signalAPI.Close()
+			signalAPI.Close() // redundant?
 			panic(err)
 		}
 		// clean up when we're done
