@@ -18,6 +18,9 @@ type SendPanel struct {
 }
 
 func (s *SendPanel) Send() {
+	if !s.isDataStaged() {
+		return
+	}
 	msg := s.GetText()
 	contact := s.parent.currentContact
 	s.parent.ShowTempSentMsg(msg)
@@ -34,7 +37,20 @@ func (s *SendPanel) Clear() {
 		return
 	}
 	conv.ClearAttachments()
-	s.SetLabel("")
+	s.Update()
+}
+
+// returns true if there is either a message or attachment to send
+func (s *SendPanel) isDataStaged() bool {
+	if len(s.GetText()) > 0 {
+		return true
+	}
+	if conv, err := s.parent.currentConversation(); err != nil {
+		return false
+	} else if conv.NumAttachments() > 0 {
+		return true
+	}
+	return false
 }
 
 func (s *SendPanel) Defocus() {
@@ -48,7 +64,7 @@ func (s *SendPanel) Update() {
 	}
 	nAttachments := conv.NumAttachments()
 	if nAttachments > 0 {
-		s.SetLabel(fmt.Sprintf("📎(%d): ", nAttachments))
+		s.SetLabel(fmt.Sprintf("📎(%d) ", nAttachments))
 	} else {
 		s.SetLabel("")
 	}
