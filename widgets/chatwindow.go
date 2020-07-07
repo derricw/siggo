@@ -382,6 +382,7 @@ func (c *ChatWindow) FancyAttach() {
 			c.SetErrorStatus(err)
 		}
 		c.sendPanel.Update()
+		c.InsertMode()
 	}
 }
 

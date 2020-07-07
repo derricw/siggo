@@ -57,6 +57,7 @@ func NewAttachInput(parent *ChatWindow) *CommandInput {
 				ci.parent.SetErrorStatus(fmt.Errorf("failed to attach: %s - %v", path, err))
 				return nil
 			}
+			ci.parent.InsertMode()
 			ci.parent.sendPanel.Update()
 			return nil
 		}
@@ -79,10 +80,14 @@ func FZFFile() (string, error) {
 	}
 	cmd.Dir = usr.HomeDir
 
-	if err = cmd.Run(); err != nil && cmd.ProcessState.ExitCode() != 130 {
+	if err = cmd.Run(); cmd.ProcessState.ExitCode() == 130 {
 		// exit code 130 is when we cancel FZF
+		// not an error
+		return "", nil
+	} else if err != nil {
 		return "", fmt.Errorf("failed to find a file: %s", err)
 	}
+
 	f := strings.TrimSpace(buf.String())
 	path := filepath.Join(usr.HomeDir, f)
 	return path, err
