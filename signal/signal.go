@@ -191,7 +191,7 @@ func (s *Signal) Daemon() error {
 
 	//  This is the only way to ensure that the signal-cli daemon is killed when we get
 	//  SIGKILL, but it isn't available on MacOS, so we leave it commented out for now.
-	//  This means that SIGKILL will leave a zombie signal-cli daemon running that will have to be
+	//  This means that SIGKILL will leave an orphaned signal-cli daemon running that will have to be
 	//  killed manually. I have tried unsuccessfully to find a cross-platform solution for this.
 	//  Other signals, like SIGTERM and SIGINT should be handled correctly.
 
