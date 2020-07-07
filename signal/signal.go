@@ -100,6 +100,7 @@ type Signal struct {
 	receiptCallbacks  []ReceiptCallback
 	receivedCallbacks []ReceivedCallback
 	errorCallbacks    []ErrorCallback
+	daemon            *exec.Cmd
 }
 
 // OnMessage registers a callback to be executed upon any incoming message of any kind (that we
@@ -189,7 +190,9 @@ func (s *Signal) ReceiveForever() {
 func (s *Signal) Daemon() error {
 	cmd := exec.Command("signal-cli", "-u", s.uname, "daemon", "--json")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGKILL,
+		//Pdeathsig: syscall.SIGKILL,
+		//Setsid:  true,
+		//Setpgid: true,
 	}
 	outReader, err := cmd.StdoutPipe()
 	if err != nil {
@@ -200,6 +203,7 @@ func (s *Signal) Daemon() error {
 		s.publishError(err)
 		return err
 	}
+	s.daemon = cmd
 
 	scanner := bufio.NewScanner(outReader)
 	log.Infof("scanning stdout")
@@ -349,6 +353,14 @@ func (s *Signal) ProcessWire(wire []byte) error {
 		}
 	}
 	return nil
+}
+
+// Close cleans up any subprocesses
+func (s *Signal) Close() {
+	if s.daemon != nil {
+		log.Debug("killing signal-cli daemon...")
+		_ = s.daemon.Process.Kill()
+	}
 }
 
 // NewSignal returns a new signal instance for the specified user.

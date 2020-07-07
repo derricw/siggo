@@ -82,6 +82,8 @@ func (ms *MockSignal) ReceiveForever() {
 	}()
 }
 
+func (ms *MockSignal) Close() {}
+
 func NewMockSignal(userNumber string, exampleData []byte) *MockSignal {
 	return &MockSignal{
 		Signal:      NewSignal(userNumber),

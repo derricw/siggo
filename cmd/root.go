@@ -83,6 +83,7 @@ var rootCmd = &cobra.Command{
 		if mock != "" {
 			signalAPI = setupMock(mock, cfg)
 		}
+		defer signalAPI.Close()
 
 		s := model.NewSiggo(signalAPI, cfg)
 
@@ -93,6 +94,7 @@ var rootCmd = &cobra.Command{
 
 		// finally, start the tview app
 		if err := app.SetRoot(chatWindow, true).SetFocus(chatWindow).Run(); err != nil {
+			signalAPI.Close()
 			panic(err)
 		}
 		// clean up when we're done

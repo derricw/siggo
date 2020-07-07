@@ -289,6 +289,7 @@ type SignalAPI interface {
 	SendDbus(string, string, ...string) (int64, error)
 	Receive() error
 	ReceiveForever()
+	Close()
 	OnReceived(signal.ReceivedCallback)
 	OnReceipt(signal.ReceiptCallback)
 	OnSent(signal.SentCallback)
@@ -527,6 +528,7 @@ func (s *Siggo) Quit() {
 	if s.config.SaveMessages {
 		s.SaveConversations()
 	}
+	s.signal.Close() // should kill daemon?
 }
 
 // NewSiggo creates a new model
