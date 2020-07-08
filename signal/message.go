@@ -51,6 +51,13 @@ type ReceiptMessage struct {
 	Timestamps []int64 `json:"timestamps"`
 }
 
+type GroupInfo struct {
+	GroupID string   `json:"groupId"`
+	Members []string `json:"members"`
+	Name    string   `json:"name"`
+	Type    string   `json:"type"`
+}
+
 type Attachment struct {
 	ContentType string `json:"contentType"`
 	Filename    string `json:"filename"`

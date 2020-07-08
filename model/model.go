@@ -28,10 +28,11 @@ var ReadStatus map[bool]string = map[bool]string{
 type PhoneNumber = string
 
 type Contact struct {
-	Number PhoneNumber
-	Name   string
-	Index  int
-	Alias  string
+	Number  PhoneNumber
+	Name    string
+	Index   int
+	Alias   string
+	isGroup bool
 }
 
 // String returns a string to display for this contact. Priority is Alias > Name > Number.
@@ -418,6 +419,10 @@ func (s *Siggo) onSent(msg *signal.Message) error {
 func (s *Siggo) onReceived(msg *signal.Message) error {
 	// add new message to conversation
 	receiveMsg := msg.Envelope.DataMessage
+	if receiveMsg.GroupInfo != nil {
+		// ignore group messages for now
+		return nil
+	}
 	contactNumber := msg.Envelope.Source
 	// if we have a name for this contact, use it
 	// otherwise it will be the phone number

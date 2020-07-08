@@ -223,7 +223,7 @@ func (s *Signal) Daemon() error {
 	log.Infof("scanning stdout")
 	for scanner.Scan() {
 		wire := scanner.Bytes()
-		log.Printf("wire (length %d): %s", len(wire), wire)
+		log.Debugf("wire (length %d): %s", len(wire), wire)
 		err = s.ProcessWire(wire)
 		if err != nil {
 			return err
@@ -323,6 +323,15 @@ func (s *Signal) GetContactList() ([]*SignalContact, error) {
 		return nil, err
 	}
 	return userData.ContactStore.Contacts, nil
+}
+
+// GetGroupList attempts to read an existing contact list from the signal user directory.
+func (s *Signal) GetGroupList() ([]*SignalGroup, error) {
+	userData, err := s.GetUserData()
+	if err != nil {
+		return nil, err
+	}
+	return userData.GroupStore.Groups, nil
 }
 
 // ProcessWire processes a single wire message, executing any callbacks we

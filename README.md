@@ -57,7 +57,7 @@ bin/siggo
 * `a` - Attach file (sent with next message)
 * `A` - Use fzf to attach a file
 * `i` - Insert Mode
-  * `CTRL+L` - Clear input field
+  * `CTRL+L` - Clear input field (also clears staged attachments)
 * `I` - Compose (opens $EDITOR and lets you make a fancy message)
 * `y` - Yank Mode
   * `yy` - Yank Last Message (from current conversation)
