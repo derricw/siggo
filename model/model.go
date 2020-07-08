@@ -45,6 +45,19 @@ func (c *Contact) String() string {
 	return c.Number
 }
 
+// Avatar returns the path to the contact's avatar, if it can find it, otherwise ""
+func (c *Contact) Avatar() string {
+	folder, err := signal.GetSignalAvatarsFolder()
+	if err != nil {
+		return ""
+	}
+	path := filepath.Join(folder, fmt.Sprintf("contact-%s", c.Number))
+	if _, err := os.Stat(path); err != nil {
+		return ""
+	}
+	return path
+}
+
 type ContactList map[PhoneNumber]*Contact
 type ConvInfo map[*Contact]*Conversation
 
@@ -440,7 +453,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 	}
 	conv.AddMessage(message)
 	s.NewInfo(conv)
-	s.sendNotification(c.String(), message.Content, "")
+	s.sendNotification(c.String(), message.Content, c.Avatar())
 	return nil
 }
 
@@ -491,6 +504,9 @@ func (s *Siggo) sendNotification(title, content, iconPath string) {
 	}
 	if !s.config.DesktopNotificationsShowMessage {
 		content = ""
+	}
+	if !s.config.DesktopNotificationsShowAvatar {
+		iconPath = ""
 	}
 	err := beeep.Notify(title, content, iconPath) // title, msg, icon
 	if err != nil {

@@ -35,6 +35,15 @@ func GetSignalFolder() (string, error) {
 	return filepath.Join(usr.HomeDir, SignalDir), nil
 }
 
+// GetSignalAvatarsFolder returns the user's signal-cli avatars folder
+func GetSignalAvatarsFolder() (string, error) {
+	signalFolder, err := GetSignalFolder()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(signalFolder, "avatars"), nil
+}
+
 // SignalContact is the data signal-cli saves for each contact
 // in SignalDataDir/<phonenumber>
 type SignalContact struct {

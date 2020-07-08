@@ -68,6 +68,7 @@ type Config struct {
 	// Attempt to send desktop notifications
 	DesktopNotifications            bool `yaml:"desktop_notifications"`
 	DesktopNotificationsShowMessage bool `yaml:"desktop_notifications_show_message"`
+	DesktopNotificationsShowAvatar  bool `yaml:"desktop_notifications_show_avatar"`
 	// doesn't do anything yet
 	MaxConversationLength int               `yaml:"max_coversation_length"`
 	HidePanelTitles       bool              `yaml:"hide_panel_titles"`
