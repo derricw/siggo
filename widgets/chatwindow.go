@@ -87,6 +87,13 @@ func (c *ChatWindow) NormalMode() {
 	c.sendPanel.SetBorderColor(tcell.ColorWhite)
 	c.mode = NormalMode
 	c.SetInputCapture(c.normalKeybinds)
+	// save draft
+	conv, err := c.currentConversation()
+	if err != nil {
+		c.SetErrorStatus(err)
+		return
+	}
+	conv.StagedMessage = c.sendPanel.GetText()
 }
 
 // YankLastMsg copies the last message of a conversation to the clipboard.
@@ -279,6 +286,7 @@ func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
 	}
 	c.conversationPanel.Update(conv)
 	conv.CaughtUp()
+	c.sendPanel.Clear()
 	c.sendPanel.Update()
 	c.conversationPanel.ScrollToEnd()
 	return nil

@@ -68,6 +68,9 @@ func (s *SendPanel) Update() {
 	} else {
 		s.SetLabel("")
 	}
+	if conv.StagedMessage != "" {
+		s.SetText(conv.StagedMessage)
+	}
 }
 
 // emojify is a custom input change handler that provides emoji support

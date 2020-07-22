@@ -149,6 +149,7 @@ type Conversation struct {
 	Messages      map[int64]*Message
 	MessageOrder  []int64
 	HasNewMessage bool
+	StagedMessage string
 	// hasNewData tracks whether new data has been added
 	// since the last save to disk
 	color             string
@@ -215,9 +216,30 @@ func (c *Conversation) ClearAttachments() {
 	c.stagedAttachments = []string{}
 }
 
+// ClearStagedMessage removes any staged attachments
+func (c *Conversation) ClearStagedMessage() {
+	c.StagedMessage = ""
+}
+
+// ClearStaged clears any staged message or attachment
+func (c *Conversation) ClearStaged() {
+	c.ClearStagedMessage()
+	c.ClearAttachments()
+}
+
 // NumAttachments returns the number of staged attachments
 func (c *Conversation) NumAttachments() int {
 	return len(c.stagedAttachments)
+}
+
+// HasStagedMessage returns whether the conversation has a staged message
+func (c *Conversation) HasStagedMessage() bool {
+	return len(c.StagedMessage) > 0
+}
+
+// HasStagedData returns whether the conversation has a staged message or attachment
+func (c *Conversation) HasStagedData() bool {
+	return c.HasStagedMessage() || c.NumAttachments() != 0
 }
 
 // CaughtUp iterates back through the messages of the conversation marking the un-read ones
@@ -348,7 +370,7 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 	message.Timestamp = ID
 	conv.CaughtUp()
 	message.AddAttachments(conv.stagedAttachments)
-	conv.ClearAttachments()
+	conv.ClearStaged()
 	conv.AddMessage(message)
 	s.NewInfo(conv)
 	log.Infof("successfully sent message %s with timestamp: %d", message.Content, message.Timestamp)

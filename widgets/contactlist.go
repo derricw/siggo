@@ -8,6 +8,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const DraftMarker = "~"
+
 type ContactListPanel struct {
 	*tview.TextView
 	siggo          *model.Siggo
@@ -64,7 +66,7 @@ func (cl *ContactListPanel) Render() {
 	log.Debugf("sorted contacts: %v", sorted)
 	for i, c := range sorted {
 		id := c.String()
-		line := fmt.Sprintf("%s\n", id)
+		line := fmt.Sprintf("%s", id)
 		color := convs[c].Color()
 		if cl.currentIndex == i {
 			line = fmt.Sprintf("[%s::r]%s[-::-]", color, line)
@@ -74,7 +76,10 @@ func (cl *ContactListPanel) Render() {
 		} else {
 			line = fmt.Sprintf("[%s::]%s[-::]", color, line)
 		}
-		data += line
+		if convs[c].HasStagedData() {
+			line += DraftMarker
+		}
+		data += fmt.Sprintf("%s\n", line)
 	}
 	cl.sortedContacts = sorted
 	cl.SetText(data)
