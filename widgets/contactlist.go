@@ -55,7 +55,7 @@ func (cl *ContactListPanel) GotoContact(contact *model.Contact) {
 	}
 }
 
-// Render re-renders the contact list
+// Render the contact list
 func (cl *ContactListPanel) Render() {
 	data := ""
 	log.Debug("updating contact panel...")

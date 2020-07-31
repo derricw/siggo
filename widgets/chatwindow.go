@@ -301,6 +301,7 @@ func (c *ChatWindow) NextUnreadMessage() error {
 			if err != nil {
 				c.SetErrorStatus(err)
 			}
+			return nil
 		}
 	}
 	return nil
