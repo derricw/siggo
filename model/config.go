@@ -2,11 +2,12 @@ package model
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -69,6 +70,8 @@ type Config struct {
 	DesktopNotifications            bool `yaml:"desktop_notifications"`
 	DesktopNotificationsShowMessage bool `yaml:"desktop_notifications_show_message"`
 	DesktopNotificationsShowAvatar  bool `yaml:"desktop_notifications_show_avatar"`
+	// Terminal bell
+	TerminalBellNotifications bool `yaml:"terminal_bell_notifications"`
 	// doesn't do anything yet
 	MaxConversationLength int               `yaml:"max_coversation_length"`
 	HidePanelTitles       bool              `yaml:"hide_panel_titles"`

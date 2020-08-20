@@ -526,6 +526,9 @@ func (s *Siggo) onReceipt(msg *signal.Message) error {
 }
 
 func (s *Siggo) sendNotification(title, content, iconPath string) {
+	if s.config.TerminalBellNotifications {
+		fmt.Print("\a")
+	}
 	if !s.config.DesktopNotifications {
 		return
 	}
