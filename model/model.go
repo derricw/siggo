@@ -126,8 +126,7 @@ func (m *Message) String(color string) string {
 	}
 	// show attachments
 	for _, a := range m.Attachments {
-		aMsg := fmt.Sprintf(" 📎| %s | %s | %dB\n", a.Filename, a.ContentType, a.Size)
-		data = fmt.Sprintf("%s%s", data, aMsg)
+		data = fmt.Sprintf("%s%s", data, a)
 	}
 	return data
 }
@@ -141,6 +140,11 @@ func (m *Message) AddAttachments(paths []string) {
 	for _, path := range paths {
 		m.Attachments = append(m.Attachments, &signal.Attachment{Filename: path})
 	}
+}
+
+// Attachment is just a signal.Attachment for now
+type Attachment struct {
+	*signal.Attachment
 }
 
 // Coversation is a contact and its associated messages

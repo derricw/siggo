@@ -28,6 +28,7 @@ const (
 	InsertMode
 	YankMode
 	OpenMode
+	LinkMode
 )
 
 // stolen from suckoverflow
@@ -51,6 +52,7 @@ type ChatWindow struct {
 	normalKeybinds    func(*tcell.EventKey) *tcell.EventKey
 	yankKeybinds      func(*tcell.EventKey) *tcell.EventKey
 	openKeybinds      func(*tcell.EventKey) *tcell.EventKey
+	linkKeybinds      func(*tcell.EventKey) *tcell.EventKey
 	goKeybinds        func(*tcell.EventKey) *tcell.EventKey
 }
 
@@ -70,18 +72,28 @@ func (c *ChatWindow) YankMode() {
 	c.SetInputCapture(c.yankKeybinds)
 }
 
-// OpenMode enters open mode
+// OpenMode enters open mode which lets us select an attachment to open
 func (c *ChatWindow) OpenMode() {
 	log.Debug("OPEN MODE")
-	c.conversationPanel.SetBorderColor(tcell.ColorBlueViolet)
 	c.mode = OpenMode
-	c.SetInputCapture(c.openKeybinds)
+	oi := NewOpenInput(c)
+	c.HideConversation(oi)
+	c.app.SetFocus(oi)
+}
+
+// LinkMode enters link mode
+func (c *ChatWindow) LinkMode() {
+	log.Debug("LINK MODE")
+	c.conversationPanel.SetBorderColor(tcell.ColorLimeGreen)
+	c.mode = LinkMode
+	c.SetInputCapture(c.linkKeybinds)
 }
 
 // NormalMode enters normal mode
 func (c *ChatWindow) NormalMode() {
 	log.Debug("NORMAL MODE")
 	c.app.SetFocus(c)
+
 	// clear our highlights
 	c.conversationPanel.SetBorderColor(tcell.ColorWhite)
 	c.sendPanel.SetBorderColor(tcell.ColorWhite)
@@ -94,6 +106,18 @@ func (c *ChatWindow) NormalMode() {
 		return
 	}
 	conv.StagedMessage = c.sendPanel.GetText()
+}
+
+// ShowConversation ensures that the conversation panel is showing. This should be called when
+// any widget is done hiding the conversation panel
+func (c *ChatWindow) ShowConversation() {
+	c.Grid.AddItem(c.conversationPanel, 0, 1, 1, 1, 0, 0, false)
+}
+
+// HideConversation temporarily replaces the conversation panel with another widget
+func (c *ChatWindow) HideConversation(replacement tview.Primitive) {
+	c.Grid.RemoveItem(c.conversationPanel)
+	c.Grid.AddItem(replacement, 0, 1, 1, 1, 0, 0, false)
 }
 
 // YankLastMsg copies the last message of a conversation to the clipboard.
@@ -203,6 +227,11 @@ func (c *ChatWindow) OpenLastAttachment() {
 	}
 }
 
+// FocusMe gives focus to the chat window
+func (c *ChatWindow) FocusMe() {
+	c.app.SetFocus(c)
+}
+
 // ShowContactSearch opens a contact search panel
 func (c *ChatWindow) ShowContactSearch() {
 	log.Debug("SHOWING CONTACT SEARCH")
@@ -218,7 +247,7 @@ func (c *ChatWindow) HideSearch() {
 	log.Debug("HIDING SEARCH")
 	c.RemoveItem(c.searchPanel)
 	c.SetRows(0, 3)
-	c.app.SetFocus(c)
+	c.FocusMe()
 }
 
 // ShowAttachInput opens a commandPanel to choose a file to attach
@@ -236,7 +265,7 @@ func (c *ChatWindow) HideCommandInput() {
 	log.Debug("HIDING COMMAND INPUT")
 	c.RemoveItem(c.commandPanel)
 	c.SetRows(0, 3)
-	c.app.SetFocus(c)
+	c.FocusMe()
 }
 
 // ShowStatusBar shows the bottom status bar
@@ -542,6 +571,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 111: // o
 				w.OpenMode()
 				return nil
+			case 108: // l
+				w.LinkMode()
+				return nil
 			case 97: // a
 				w.ShowAttachInput()
 				return nil
@@ -608,11 +640,25 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 		switch event.Key() {
 		case tcell.KeyRune:
 			switch event.Rune() {
-			case 108: // l
-				w.OpenLastLink()
-				return nil
 			case 111: // o
 				w.OpenLastAttachment()
+				return nil
+			}
+		case tcell.KeyCtrlQ:
+			w.Quit()
+		case tcell.KeyESC:
+			w.NormalMode()
+			return nil
+		}
+		return event
+	}
+	w.linkKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
+		log.Debugf("Key Event <LINK>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyRune:
+			switch event.Rune() {
+			case 108: // l
+				w.OpenLastLink()
 				return nil
 			}
 		case tcell.KeyCtrlQ:
@@ -628,7 +674,8 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	// primitiv, row, col, rowSpan, colSpan, minGridHeight, maxGridHeight, focus)
 	// TODO: lets make some of the spans confiurable?
 	w.AddItem(w.contactsPanel, 0, 0, 2, 1, 0, 0, false)
-	w.AddItem(w.conversationPanel, 0, 1, 1, 1, 0, 0, false)
+	//w.AddItem(w.conversationPanel, 0, 1, 1, 1, 0, 0, false)
+	w.ShowConversation()
 	w.AddItem(w.sendPanel, 1, 1, 1, 1, 0, 0, false)
 
 	if w.siggo.Config().HidePanelTitles {

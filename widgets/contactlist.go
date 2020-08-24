@@ -70,7 +70,6 @@ func (cl *ContactListPanel) Render() {
 		color := convs[c].Color()
 		if cl.currentIndex == i {
 			line = fmt.Sprintf("[%s::r]%s[-::-]", color, line)
-			cl.currentIndex = i
 		} else if convs[c].HasNewMessage {
 			line = fmt.Sprintf("[%s::b]*%s[-::-]", color, line)
 		} else {

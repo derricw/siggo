@@ -1,6 +1,7 @@
 package signal
 
 import (
+	"fmt"
 	"path/filepath"
 )
 
@@ -77,4 +78,10 @@ func (a *Attachment) Path() (string, error) {
 		return "", err
 	}
 	return filepath.Join(folder, "attachments", a.ID), nil
+}
+
+// String returns the string representation of the attachment
+// TODO: this should be in the model, not here
+func (a *Attachment) String() string {
+	return fmt.Sprintf(" 📎| %s | %s | %dB\n", a.Filename, a.ContentType, a.Size)
 }
