@@ -1,8 +1,6 @@
 package signal
 
-import (
-	"path/filepath"
-)
+import ()
 
 type Message struct {
 	Envelope *Envelope `json:"envelope"`
@@ -63,18 +61,4 @@ type Attachment struct {
 	Filename    string `json:"filename"`
 	ID          string `json:"id"`
 	Size        int    `json:"size"`
-}
-
-// Path returns the full path to an attachment file
-func (a *Attachment) Path() (string, error) {
-	if a.ID == "" {
-		// TODO: save our own copy of the attachment with our own ID
-		// for now, just return the path where we attached it
-		return a.Filename, nil
-	}
-	folder, err := GetSignalFolder()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(folder, "attachments", a.ID), nil
 }
