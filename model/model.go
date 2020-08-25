@@ -94,13 +94,13 @@ func (cl ContactList) SortedByIndex() []*Contact {
 }
 
 type Message struct {
-	Content     string               `json:"content"`
-	From        string               `json:"from"`
-	Timestamp   int64                `json:"timestamp"`
-	IsDelivered bool                 `json:"is_delivered"`
-	IsRead      bool                 `json:"is_read"`
-	FromSelf    bool                 `json:"from_self"`
-	Attachments []*signal.Attachment `json:"attachments"`
+	Content     string        `json:"content"`
+	From        string        `json:"from"`
+	Timestamp   int64         `json:"timestamp"`
+	IsDelivered bool          `json:"is_delivered"`
+	IsRead      bool          `json:"is_read"`
+	FromSelf    bool          `json:"from_self"`
+	Attachments []*Attachment `json:"attachments"`
 }
 
 func (m *Message) String(color string) string {
@@ -135,16 +135,73 @@ func (m *Message) String(color string) string {
 // they show up in the GUI.
 func (m *Message) AddAttachments(paths []string) {
 	if m.Attachments == nil {
-		m.Attachments = make([]*signal.Attachment, 0)
+		m.Attachments = make([]*Attachment, 0)
 	}
 	for _, path := range paths {
-		m.Attachments = append(m.Attachments, &signal.Attachment{Filename: path})
+		size := 0
+		stats, err := os.Stat(path)
+		if err == nil {
+			size = int(stats.Size())
+		}
+		m.Attachments = append(m.Attachments, &Attachment{
+			Filename:  path,
+			FromSelf:  true,
+			Timestamp: m.Timestamp,
+			Size:      size,
+		})
 	}
 }
 
 // Attachment is just a signal.Attachment for now
 type Attachment struct {
-	*signal.Attachment
+	ContentType string `json:"contentType"`
+	Filename    string `json:"filename"`
+	ID          string `json:"id"`
+	Size        int    `json:"size"`
+	Timestamp   int64  `json:"timestamp"`
+	FromSelf    bool   `json:"from_self"`
+}
+
+// Path returns the full path to an attachment file
+func (a *Attachment) Path() (string, error) {
+	if a.ID == "" {
+		// TODO: save our own copy of the attachment with our own ID
+		// for now, just return the path where we attached it
+		return a.Filename, nil
+	}
+	folder, err := signal.GetSignalFolder()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(folder, "attachments", a.ID), nil
+}
+
+// String returns the string representation of the attachment
+func (a *Attachment) String() string {
+	ts := time.Unix(0, a.Timestamp*1000000).Format("2006-01-02 15:04:05")
+	txt := fmt.Sprintf(" 📎| %s | %s | %s | %dB\n", ts, a.Filename, a.ContentType, a.Size)
+	return txt
+}
+
+// NewAttachmentFromWire creates a new siggo attachment from a signal.Attachment
+func NewAttachmentFromWire(wire *signal.Attachment, timestamp int64, fromSelf bool) *Attachment {
+	return &Attachment{
+		ContentType: wire.ContentType,
+		Filename:    wire.Filename,
+		ID:          wire.ID,
+		Size:        wire.Size,
+		Timestamp:   timestamp,
+		FromSelf:    fromSelf,
+	}
+}
+
+// ConvertAttachments converts signal's wire attachments into our model's attachments
+func ConvertAttachments(wire []*signal.Attachment, timestamp int64, fromSelf bool) []*Attachment {
+	out := make([]*Attachment, len(wire))
+	for _, a := range wire {
+		out = append(out, NewAttachmentFromWire(a, timestamp, fromSelf))
+	}
+	return out
 }
 
 // Coversation is a contact and its associated messages
@@ -349,14 +406,15 @@ type Siggo struct {
 
 // Send sends a message to a contact.
 func (s *Siggo) Send(msg string, contact *Contact) error {
+	ts := time.Now().Unix() * 1000
 	message := &Message{
 		Content:     msg,
 		From:        " ~ ",
-		Timestamp:   time.Now().Unix() * 1000,
+		Timestamp:   ts,
 		IsDelivered: false,
 		IsRead:      false,
 		FromSelf:    true,
-		Attachments: make([]*signal.Attachment, 0),
+		Attachments: make([]*Attachment, 0),
 	}
 	conv, ok := s.conversations[contact]
 	if !ok {
@@ -430,7 +488,7 @@ func (s *Siggo) onSent(msg *signal.Message) error {
 		IsDelivered: false,
 		IsRead:      false,
 		FromSelf:    true,
-		Attachments: sentMsg.Attachments,
+		Attachments: ConvertAttachments(sentMsg.Attachments, sentMsg.Timestamp, true),
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
@@ -475,7 +533,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 		Timestamp:   receiveMsg.Timestamp,
 		IsDelivered: true,
 		IsRead:      false,
-		Attachments: receiveMsg.Attachments,
+		Attachments: ConvertAttachments(receiveMsg.Attachments, receiveMsg.Timestamp, false),
 	}
 	conv, ok := s.conversations[c]
 	if !ok {

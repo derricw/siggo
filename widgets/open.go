@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
 
-	"github.com/derricw/siggo/signal"
+	"github.com/derricw/siggo/model"
 )
 
 // OpenInput is a widget that allows us to select an attachment to open.
@@ -31,12 +31,19 @@ func (oi *OpenInput) Render() {
 	if oi.numAttachements == 0 {
 		return
 	}
+	if oi.selected < 0 {
+		oi.selected = oi.numAttachements - 1
+	} else if oi.selected >= oi.numAttachements {
+		oi.selected = 0
+	}
 
 	text := ""
 	for i := oi.numAttachements - 1; i >= 0; i-- {
 		item := fmt.Sprintf("%s", a[i])
 		if i == oi.selected {
 			item = fmt.Sprintf("[::r]%s[::-]", item)
+		} else if a[i].FromSelf {
+			item = fmt.Sprintf("[::d]%s[::-]", item)
 		}
 		text += item
 	}
@@ -45,17 +52,11 @@ func (oi *OpenInput) Render() {
 
 func (oi *OpenInput) Previous() {
 	oi.selected--
-	if oi.selected < 0 {
-		oi.selected = 0
-	}
 	oi.Render()
 }
 
 func (oi *OpenInput) Next() {
 	oi.selected++
-	if oi.selected >= oi.numAttachements {
-		oi.selected = oi.numAttachements - 1
-	}
 	oi.Render()
 }
 
@@ -82,7 +83,7 @@ func (oi *OpenInput) OpenSelected() {
 }
 
 // OpenAttachment opens a `*signal.Attachment`
-func (oi *OpenInput) OpenAttachment(attachment *signal.Attachment) {
+func (oi *OpenInput) OpenAttachment(attachment *model.Attachment) {
 	path, err := attachment.Path()
 	if err != nil {
 		oi.parent.SetErrorStatus(fmt.Errorf("📎failed to find attachment: %v", err))
@@ -107,6 +108,7 @@ func NewOpenInput(parent *ChatWindow) *OpenInput {
 	oi := &OpenInput{
 		TextView: tview.NewTextView(),
 		parent:   parent,
+		selected: -1,
 	}
 	inputHandler := oi.TextView.InputHandler()
 	oi.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -148,7 +150,6 @@ func NewOpenInput(parent *ChatWindow) *OpenInput {
 				oi.Next()
 				return nil
 			}
-
 		case tcell.KeyEnter:
 			oi.OpenSelected()
 			return nil
@@ -159,7 +160,6 @@ func NewOpenInput(parent *ChatWindow) *OpenInput {
 
 	oi.SetDynamicColors(true)
 	oi.SetBorder(true)
-
 	oi.Render()
 
 	return oi

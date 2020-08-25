@@ -13,7 +13,6 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/derricw/siggo/model"
-	"github.com/derricw/siggo/signal"
 	"github.com/gdamore/tcell"
 	"github.com/kyokomi/emoji"
 	"github.com/rivo/tview"
@@ -151,8 +150,8 @@ func (c *ChatWindow) getLinks() []string {
 	return urlRegex.FindAllString(toSearch, -1)
 }
 
-func (c *ChatWindow) getAttachments() []*signal.Attachment {
-	a := make([]*signal.Attachment, 0)
+func (c *ChatWindow) getAttachments() []*model.Attachment {
+	a := make([]*model.Attachment, 0)
 	conv, err := c.currentConversation()
 	if err != nil {
 		return a
