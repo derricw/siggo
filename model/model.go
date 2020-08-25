@@ -197,7 +197,7 @@ func NewAttachmentFromWire(wire *signal.Attachment, timestamp int64, fromSelf bo
 
 // ConvertAttachments converts signal's wire attachments into our model's attachments
 func ConvertAttachments(wire []*signal.Attachment, timestamp int64, fromSelf bool) []*Attachment {
-	out := make([]*Attachment, len(wire))
+	out := make([]*Attachment, 0, len(wire))
 	for _, a := range wire {
 		out = append(out, NewAttachmentFromWire(a, timestamp, fromSelf))
 	}
