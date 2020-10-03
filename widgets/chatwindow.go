@@ -448,13 +448,22 @@ func (c *ChatWindow) Quit() {
 
 func (c *ChatWindow) update() {
 	convs := c.siggo.Conversations()
-	if convs != nil {
+	if convs != nil && len(convs) > 0 {
+		if c.currentContact == nil {
+			// there is a conversation but we haven't set a current contact yet
+			// just grab the first one we find
+			for _, contact := range c.siggo.Contacts() {
+				c.currentContact = contact
+				break
+			}
+		}
 		c.contactsPanel.Render()
 		currentConv, ok := convs[c.currentContact]
 		if ok {
 			c.conversationPanel.Update(currentConv)
 		} else {
-			panic("no conversation for current contact")
+			// this is a panic because it shouldn't be possible?
+			log.Panicf("no conversation for current contact: %s", c.currentContact)
 		}
 	}
 }
@@ -689,6 +698,7 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 
 	w.siggo = siggo
 	contacts := siggo.Contacts().SortedByIndex()
+	log.Debugf("contacts found: %v", contacts)
 	if len(contacts) > 0 {
 		w.currentContact = contacts[0]
 	}
