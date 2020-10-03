@@ -87,6 +87,10 @@ var rootCmd = &cobra.Command{
 			cfg.UserNumber = fmt.Sprintf("+%s", cfg.UserNumber)
 		}
 
+		if len(cfg.UserNumber) < 12 {
+			log.Fatalf("user phone number: %s is too short. did you forget a country code?", cfg.UserNumber)
+		}
+
 		initLogging(cfg)
 
 		var signalAPI model.SignalAPI = signal.NewSignal(cfg.UserNumber)
