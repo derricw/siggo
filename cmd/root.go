@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	ossig "os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
@@ -34,6 +35,13 @@ func initLogging(cfg *model.Config) {
 	if cfg.LogFilePath == "" {
 		cfg.LogFilePath = model.LogPath()
 	}
+
+	dir := filepath.Dir(cfg.LogFilePath)
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		log.Fatalf("failed to create folder: %s", dir)
+	}
+
 	logFile, err := os.Create(cfg.LogFilePath)
 	if err != nil {
 		log.Fatalf("error creating log file: %v %v", cfg.LogFilePath, err)
