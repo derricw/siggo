@@ -3,7 +3,7 @@
 [![Go Report](https://goreportcard.com/badge/github.com/derricw/siggo)](https://goreportcard.com/badge/github.com/derricw/siggo)
 ![Build](https://github.com/derricw/siggo/workflows/Test/badge.svg)
 
-A terminal gui for signal-cli, written in Go.
+A terminal ui for signal-cli, written in Go.
 
 ![Alt text](media/screenshot.jpg?raw=true "Screenshot")
 
@@ -85,6 +85,10 @@ Delete them like this:
 ```
 rm ~/.local/share/siggo/conversations/*
 ```
+
+### Troubleshooting
+
+I've started a wiki [here](https://github.com/derricw/siggo/wiki/Troubleshooting).
 
 ### Development
 
