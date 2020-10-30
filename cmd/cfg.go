@@ -80,7 +80,7 @@ var cfgColorCmd = &cobra.Command{
 			// make sure contact exists?
 			// make sure color exists
 			color := tcell.GetColor(colorName)
-			if color == -1 {
+			if color == tcell.ColorDefault {
 				log.Fatalf("color is not valid W3C color: %s", colorName)
 			}
 			// set color and save config
