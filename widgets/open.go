@@ -12,11 +12,12 @@ import (
 )
 
 // OpenInput is a widget that allows us to select an attachment to open.
+// lets replace this with a list?
 type OpenInput struct {
-	*tview.TextView
+	*tview.List
 	parent          *ChatWindow
-	selected        int
 	numAttachements int
+	attachments     []*model.Attachment
 }
 
 func (oi *OpenInput) Close() {
@@ -25,45 +26,34 @@ func (oi *OpenInput) Close() {
 	oi.parent.FocusMe()
 }
 
-func (oi *OpenInput) Render() {
+// init populates the list with attachments
+func (oi *OpenInput) init() {
+	oi.Clear()
 	a := oi.parent.getAttachments() // should be sorted by date
-	oi.numAttachements = len(a)
-	if oi.numAttachements == 0 {
-		return
-	}
-	if oi.selected < 0 {
-		oi.selected = oi.numAttachements - 1
-	} else if oi.selected >= oi.numAttachements {
-		oi.selected = 0
-	}
-
-	text := ""
-	for i := oi.numAttachements - 1; i >= 0; i-- {
-		item := fmt.Sprintf("%s", a[i])
-		if i == oi.selected {
-			item = fmt.Sprintf("[::r]%s[::-]", item)
-		} else if a[i].FromSelf {
-			item = fmt.Sprintf("[::d]%s[::-]", item)
+	oi.attachments = a
+	for _, item := range a {
+		if item.FromSelf {
+			oi.AddItem(item.String(), "self", 0, nil)
+		} else {
+			oi.AddItem(item.String(), "", 0, nil)
 		}
-		text += item
 	}
-	oi.SetText(text)
 }
 
 func (oi *OpenInput) Previous() {
-	oi.selected--
-	oi.Render()
+	current := oi.GetCurrentItem()
+	oi.SetCurrentItem(current - 1)
 }
 
 func (oi *OpenInput) Next() {
-	oi.selected++
-	oi.Render()
+	current := oi.GetCurrentItem()
+	oi.SetCurrentItem(current + 1)
 }
 
 // OpenLastAttachment opens the last attachment that it finds in the conversation
 func (oi *OpenInput) OpenLast() {
 	oi.Close()
-	attachments := oi.parent.getAttachments()
+	attachments := oi.attachments
 	if len(attachments) > 0 {
 		last := attachments[len(attachments)-1]
 		oi.OpenAttachment(last)
@@ -73,13 +63,13 @@ func (oi *OpenInput) OpenLast() {
 }
 
 // OpenSelected opens whichever attachment is selected
-// TODO: should this also `Close()` and return to normal mode?
 func (oi *OpenInput) OpenSelected() {
-	attachments := oi.parent.getAttachments()
-	if len(attachments) == 0 || oi.selected >= len(attachments) {
+	nattach := len(oi.attachments)
+	selected := oi.GetCurrentItem()
+	if nattach == 0 || selected >= nattach {
 		return
 	}
-	oi.OpenAttachment(attachments[oi.selected])
+	oi.OpenAttachment(oi.attachments[selected])
 }
 
 // OpenAttachment opens a `*signal.Attachment`
@@ -106,11 +96,10 @@ func (oi *OpenInput) OpenPath(path string) {
 
 func NewOpenInput(parent *ChatWindow) *OpenInput {
 	oi := &OpenInput{
-		TextView: tview.NewTextView(),
-		parent:   parent,
-		selected: -1,
+		List:   tview.NewList(),
+		parent: parent,
 	}
-	inputHandler := oi.TextView.InputHandler()
+	inputHandler := oi.List.InputHandler()
 	oi.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Setup keys
 		log.Debugf("Key Event <OPEN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
@@ -119,12 +108,12 @@ func NewOpenInput(parent *ChatWindow) *OpenInput {
 			oi.Close()
 			oi.parent.NormalMode()
 			return nil
-		case tcell.KeyUp:
-			oi.Next()
-			return nil
-		case tcell.KeyDown:
-			oi.Previous()
-			return nil
+		//case tcell.KeyUp:
+		//oi.Next()
+		//return nil
+		//case tcell.KeyDown:
+		//oi.Previous()
+		//return nil
 		case tcell.KeyPgUp:
 			inputHandler(event, func(p tview.Primitive) {})
 			return nil
@@ -144,10 +133,10 @@ func NewOpenInput(parent *ChatWindow) *OpenInput {
 				oi.OpenLast()
 				return nil
 			case 106: // j
-				oi.Previous()
+				oi.Next()
 				return nil
 			case 107: // k
-				oi.Next()
+				oi.Previous()
 				return nil
 			}
 		case tcell.KeyEnter:
@@ -158,9 +147,12 @@ func NewOpenInput(parent *ChatWindow) *OpenInput {
 		return event
 	})
 
-	oi.SetDynamicColors(true)
+	//oi.SetDynamicColors(true)
+	oi.SetHighlightFullLine(true)
+	oi.ShowSecondaryText(false)
 	oi.SetBorder(true)
-	oi.Render()
+	oi.init()
+	oi.SetCurrentItem(-1)
 
 	return oi
 }
