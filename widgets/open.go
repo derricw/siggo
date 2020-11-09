@@ -12,12 +12,10 @@ import (
 )
 
 // OpenInput is a widget that allows us to select an attachment to open.
-// lets replace this with a list?
 type OpenInput struct {
 	*tview.List
-	parent          *ChatWindow
-	numAttachements int
-	attachments     []*model.Attachment
+	parent      *ChatWindow
+	attachments []*model.Attachment
 }
 
 func (oi *OpenInput) Close() {
@@ -32,11 +30,13 @@ func (oi *OpenInput) init() {
 	a := oi.parent.getAttachments() // should be sorted by date
 	oi.attachments = a
 	for _, item := range a {
+		var text string
 		if item.FromSelf {
-			oi.AddItem(item.String(), "self", 0, nil)
+			text = fmt.Sprintf(" <- %s", item.String())
 		} else {
-			oi.AddItem(item.String(), "", 0, nil)
+			text = fmt.Sprintf(" -> %s", item.String())
 		}
+		oi.AddItem(text, "", 0, nil)
 	}
 }
 
