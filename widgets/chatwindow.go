@@ -17,7 +17,6 @@ import (
 	"github.com/kyokomi/emoji"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
-	"github.com/skratchdot/open-golang/open"
 )
 
 type Mode int
@@ -83,9 +82,10 @@ func (c *ChatWindow) OpenMode() {
 // LinkMode enters link mode
 func (c *ChatWindow) LinkMode() {
 	log.Debug("LINK MODE")
-	c.conversationPanel.SetBorderColor(tcell.ColorLimeGreen)
 	c.mode = LinkMode
-	c.SetInputCapture(c.linkKeybinds)
+	li := NewLinksInput(c)
+	c.HideConversation(li)
+	c.app.SetFocus(li)
 }
 
 // NormalMode enters normal mode
@@ -180,49 +180,6 @@ func (c *ChatWindow) YankLastLink() {
 		c.SetStatus(fmt.Sprintf("📋%s", last))
 	} else {
 		c.SetStatus(fmt.Sprintf("📋<NO MATCHES>"))
-	}
-}
-
-// OpenLastLink opens the last link that is finds in the conversation
-// TODO: solution for browsing/opening any link
-func (c *ChatWindow) OpenLastLink() {
-	c.NormalMode()
-	links := c.getLinks()
-	if len(links) > 0 {
-		last := links[len(links)-1]
-		err := open.Run(last)
-		if err != nil {
-			c.SetErrorStatus(fmt.Errorf("<OPEN FAILED: %v>", err))
-		} else {
-			c.SetStatus(fmt.Sprintf("📂%s", last))
-		}
-	} else {
-		c.SetStatus(fmt.Sprintf("📂<NO MATCHES>"))
-	}
-}
-
-// OpenLastAttachment opens the last attachment that it finds in the conversation
-// TODO: solution for browsing/opening any attachment
-func (c *ChatWindow) OpenLastAttachment() {
-	c.NormalMode()
-	attachments := c.getAttachments()
-	if len(attachments) > 0 {
-		last := attachments[len(attachments)-1]
-		path, err := last.Path()
-		if err != nil {
-			c.SetErrorStatus(fmt.Errorf("📎failed to find attachment: %v", err))
-			return
-		}
-		go func() {
-			err = open.Run(path)
-			if err != nil {
-				c.SetErrorStatus(fmt.Errorf("📎<OPEN FAILED: %v>", err))
-			} else {
-				c.SetStatus(fmt.Sprintf("📎%s", path))
-			}
-		}()
-	} else {
-		c.SetStatus(fmt.Sprintf("📎<NO MATCHES>"))
 	}
 }
 
@@ -633,40 +590,6 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 				return nil
 			case 108: // l
 				w.YankLastLink()
-				return nil
-			}
-		case tcell.KeyCtrlQ:
-			w.Quit()
-		case tcell.KeyESC:
-			w.NormalMode()
-			return nil
-		}
-		return event
-	}
-	w.openKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
-		log.Debugf("Key Event <OPEN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
-		switch event.Key() {
-		case tcell.KeyRune:
-			switch event.Rune() {
-			case 111: // o
-				w.OpenLastAttachment()
-				return nil
-			}
-		case tcell.KeyCtrlQ:
-			w.Quit()
-		case tcell.KeyESC:
-			w.NormalMode()
-			return nil
-		}
-		return event
-	}
-	w.linkKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
-		log.Debugf("Key Event <LINK>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
-		switch event.Key() {
-		case tcell.KeyRune:
-			switch event.Rune() {
-			case 108: // l
-				w.OpenLastLink()
 				return nil
 			}
 		case tcell.KeyCtrlQ:

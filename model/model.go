@@ -126,7 +126,7 @@ func (m *Message) String(color string) string {
 	}
 	// show attachments
 	for _, a := range m.Attachments {
-		data = fmt.Sprintf("%s%s", data, a)
+		data = fmt.Sprintf("%s%s\n", data, a)
 	}
 	return data
 }
@@ -179,7 +179,7 @@ func (a *Attachment) Path() (string, error) {
 // String returns the string representation of the attachment
 func (a *Attachment) String() string {
 	ts := time.Unix(0, a.Timestamp*1000000).Format("2006-01-02 15:04:05")
-	txt := fmt.Sprintf(" 📎| %s | %s | %s | %dB\n", ts, a.Filename, a.ContentType, a.Size)
+	txt := fmt.Sprintf(" 📎| %s | %s | %s | %dB", ts, a.Filename, a.ContentType, a.Size)
 	return txt
 }
 
