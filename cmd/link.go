@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/derricw/siggo/model"
 	"github.com/derricw/siggo/signal"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -22,5 +24,12 @@ var linkCmd = &cobra.Command{
 		fmt.Println("linking...")
 		sig := signal.NewSignal(args[0])
 		sig.Link(args[1])
+
+		cfg, err := model.GetConfig()
+		if err != nil {
+			log.Fatalf("failed to read config @ %s", model.ConfigPath())
+		}
+		cfg.UserNumber = args[0]
+		cfg.Save()
 	},
 }
