@@ -31,15 +31,15 @@ type Contact struct {
 	Number  PhoneNumber
 	Name    string
 	Index   int
-	Alias   string
+	alias   string
 	color   string
 	isGroup bool
 }
 
 // String returns a string to display for this contact. Priority is Alias > Name > Number.
 func (c *Contact) String() string {
-	if c.Alias != "" {
-		return c.Alias
+	if c.alias != "" {
+		return c.alias
 	}
 	if c.Name != "" {
 		return c.Name
@@ -63,6 +63,12 @@ func (c *Contact) Avatar() string {
 		return ""
 	}
 	return path
+}
+
+// Configure applies a configuration to the contact (for now, an alias and custom color)
+func (c *Contact) Configure(cfg *Config) {
+	c.color = cfg.ContactColors[c.Name]
+	c.alias = cfg.ContactAliases[c.Name]
 }
 
 type ContactList map[PhoneNumber]*Contact
@@ -250,11 +256,12 @@ func (c *Conversation) addMessage(message *Message) {
 	c.Messages[message.Timestamp] = message
 	if !ok {
 		// new messages
-		// TODO: this is to prevent pre-groups conversations from breaking!
-		// lets remove this later
+		// TODO: this section is to prevent saved pre-groups conversations from breaking when
+		// loading.  it ensures that they have a contact. lets remove this after a few releases
 		if !message.FromSelf && message.FromContact == nil {
 			message.FromContact = c.Contact
 		}
+		// this we keep
 		c.MessageOrder = append(c.MessageOrder, message.Timestamp)
 		c.HasNewMessage = true
 		c.hasNewData = true
@@ -361,7 +368,8 @@ func (c *Conversation) Save() error {
 
 // Load will load a conversation saved @ `path`
 // TODO: load only the last N messages based on config
-func (c *Conversation) Load(path string) error {
+// HERE IS WHERE THE COLOR THE LOADED MESSAGES
+func (c *Conversation) Load(path string, cfg *Config) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -373,6 +381,9 @@ func (c *Conversation) Load(path string) error {
 		err := json.Unmarshal(s.Bytes(), msg)
 		if err != nil {
 			return err
+		}
+		if msg.FromContact != nil {
+			msg.FromContact.Configure(cfg)
 		}
 		c.addMessage(msg)
 	}
@@ -764,7 +775,7 @@ func (s *Siggo) getContacts() ContactList {
 				Number: c.Number,
 				Name:   c.Name,
 				Index:  *c.InboxPosition,
-				Alias:  alias,
+				alias:  alias,
 				color:  color,
 			}
 			list[c.Number] = contact
@@ -791,7 +802,7 @@ func (s *Siggo) getContacts() ContactList {
 				Number:  g.GroupID,
 				Name:    g.Name,
 				Index:   highestIndex,
-				Alias:   alias,
+				alias:   alias,
 				isGroup: true,
 			}
 		}
@@ -808,7 +819,7 @@ func (s *Siggo) getConversations() map[*Contact]*Conversation {
 		// check if we have a conversation file for this contact
 		if s.config.SaveMessages {
 			convPath := filepath.Join(ConversationFolder(), contact.Number)
-			err := conv.Load(convPath) // if we fail to load, oh well
+			err := conv.Load(convPath, s.config) // if we fail to load, oh well
 			if err == nil {
 				log.Infof("loaded conversation from: %s", contact.Name)
 			}
