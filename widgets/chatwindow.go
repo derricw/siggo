@@ -393,7 +393,7 @@ func (c *ChatWindow) ShowTempSentMsg(msg string) {
 	}
 	// write directly to conv panel but don't add to conversation
 	// no color since its from us
-	c.conversationPanel.Write([]byte(tmpMsg.String("")))
+	c.conversationPanel.Write([]byte(tmpMsg.String()))
 }
 
 // Quit shuts down gracefully

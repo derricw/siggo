@@ -32,6 +32,7 @@ type Contact struct {
 	Name    string
 	Index   int
 	Alias   string
+	color   string
 	isGroup bool
 }
 
@@ -44,6 +45,11 @@ func (c *Contact) String() string {
 		return c.Name
 	}
 	return c.Number
+}
+
+// Color returns the configured color highlight for incoming messages
+func (c *Contact) Color() string {
+	return c.color
 }
 
 // Avatar returns the path to the contact's avatar, if it can find it, otherwise ""
@@ -95,16 +101,24 @@ func (cl ContactList) SortedByIndex() []*Contact {
 
 type Message struct {
 	Content     string        `json:"content"`
-	From        string        `json:"from"`
 	Timestamp   int64         `json:"timestamp"`
 	IsDelivered bool          `json:"is_delivered"`
 	IsRead      bool          `json:"is_read"`
 	FromSelf    bool          `json:"from_self"`
 	Attachments []*Attachment `json:"attachments"`
+	From        string        `json:from"`
+	FromContact *Contact      `json:from_contact"`
 }
 
-func (m *Message) String(color string) string {
-	var fromStr = m.From
+func (m *Message) String() string {
+	var fromStr, color string
+	if !m.FromSelf {
+		fromStr = m.FromContact.String()
+		color = m.FromContact.Color()
+	} else {
+		fromStr = " ~ "
+	}
+
 	template := "%s|%s%s| %" + fmt.Sprintf("%dv", len(fromStr)) + ": %s\n"
 	data := fmt.Sprintf(template,
 		// lets come up with a way to avoid the *1000000
@@ -213,7 +227,6 @@ type Conversation struct {
 	StagedMessage string
 	// hasNewData tracks whether new data has been added
 	// since the last save to disk
-	color             string
 	hasNewData        bool
 	stagedAttachments []string
 }
@@ -222,14 +235,9 @@ type Conversation struct {
 func (c *Conversation) String() string {
 	out := ""
 	for _, k := range c.MessageOrder {
-		out += c.Messages[k].String(c.color)
+		out += c.Messages[k].String()
 	}
 	return out
-}
-
-// Color returns the configured color highlight for incoming messages
-func (c *Conversation) Color() string {
-	return c.color
 }
 
 // AddMessage appends a message to the conversation
@@ -242,11 +250,10 @@ func (c *Conversation) addMessage(message *Message) {
 	c.Messages[message.Timestamp] = message
 	if !ok {
 		// new messages
-		if !message.FromSelf && !c.Contact.isGroup {
-			// apply alias if we need to
-			// should this happen earlier?
-			// TODO: messages should have a contact pointer so they can color and alias themselves
-			message.From = c.Contact.String()
+		// TODO: this is to prevent pre-groups conversations from breaking!
+		// lets remove this later
+		if !message.FromSelf && message.FromContact == nil {
+			message.FromContact = c.Contact
 		}
 		c.MessageOrder = append(c.MessageOrder, message.Timestamp)
 		c.HasNewMessage = true
@@ -544,6 +551,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 		IsDelivered: true,
 		IsRead:      false,
 		Attachments: ConvertAttachments(receiveMsg.Attachments, receiveMsg.Timestamp, false),
+		FromContact: c,
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
@@ -638,6 +646,7 @@ func (s *Siggo) onGroupMessageReceived(msg *signal.Message) error {
 		IsDelivered: true,
 		IsRead:      false,
 		Attachments: ConvertAttachments(receiveMsg.Attachments, receiveMsg.Timestamp, false),
+		FromContact: c,
 	}
 
 	conv, ok := s.conversations[g]
@@ -749,12 +758,16 @@ func (s *Siggo) getContacts() ContactList {
 			if s.config.ContactAliases != nil {
 				alias = s.config.ContactAliases[c.Name]
 			}
-			list[c.Number] = &Contact{
+			// check if we have a color for this contact
+			color := s.config.ContactColors[c.Name]
+			contact := &Contact{
 				Number: c.Number,
 				Name:   c.Name,
 				Index:  *c.InboxPosition,
 				Alias:  alias,
+				color:  color,
 			}
+			list[c.Number] = contact
 			if *c.InboxPosition > highestIndex {
 				highestIndex = *c.InboxPosition
 			}
@@ -799,10 +812,6 @@ func (s *Siggo) getConversations() map[*Contact]*Conversation {
 			if err == nil {
 				log.Infof("loaded conversation from: %s", contact.Name)
 			}
-		}
-		// check if we have a color for this contact
-		if color, ok := s.config.ContactColors[contact.Name]; ok {
-			conv.color = color
 		}
 		conv.CaughtUp()
 		conversations[contact] = conv
