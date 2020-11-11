@@ -63,9 +63,12 @@ bin/siggo
   * `yy` - Yank Last Message (from current conversation)
   * `yl` - Yank Last URL
 * `o` - Open Mode
+  * `Enter` - Open selected attachment
   * `oo` - Open Last Attachment
 * `l` - Link Mode
+  * `Enter` - Open selected link in browser
   * `ll` - Open Last URL
+  * `y` - Yank selected link to clipboard
 * `ESC` - Normal Mode
 * `CTRL+N` - Move to next conversation with unread messages
 * `CTRL+Q` - Quit (`CTRL+C` _should_ also work)

@@ -11,7 +11,7 @@ BUILD_DATE= $(shell date '+%Y-%m-%d-%H:%M:%S')
 GOFMT := gofmt
 GO     = go
 
-default: fmt test build release
+default: fmt test build
 
 test:
 	go test -v -coverprofile "cov.cov" -covermode=count ./...

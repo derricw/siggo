@@ -204,9 +204,9 @@ func ConvertAttachments(wire []*signal.Attachment, timestamp int64, fromSelf boo
 	return out
 }
 
-// Coversation is a contact and its associated messages
+// Coversation is a contact or group and its associated messages
 type Conversation struct {
-	Contact       *Contact
+	Contact       *Contact // can be a group!
 	Messages      map[int64]*Message
 	MessageOrder  []int64
 	HasNewMessage bool
@@ -384,6 +384,7 @@ func NewConversation(contact *Contact) *Conversation {
 type SignalAPI interface {
 	Send(string, string) (int64, error)
 	SendDbus(string, string, ...string) (int64, error)
+	SendGroupDbus(string, string, ...string) (int64, error)
 	Receive() error
 	ReceiveForever()
 	Close()
@@ -422,7 +423,15 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 		conv = s.newConversation(contact)
 	}
 	// finally send the message
-	ID, err := s.signal.SendDbus(contact.Number, msg, conv.stagedAttachments...)
+	var ID int64
+	var err error
+	if !contact.isGroup {
+		log.Debugf("sending message to contact: %v", contact)
+		ID, err = s.signal.SendDbus(contact.Number, msg, conv.stagedAttachments...)
+	} else {
+		log.Debugf("sending message to group: %v", contact)
+		ID, err = s.signal.SendGroupDbus(contact.Number, msg, conv.stagedAttachments...)
+	}
 	if err != nil {
 		message.Content = fmt.Sprintf("FAILED TO SEND: %s ERROR: %v", message.Content, err)
 		s.NewInfo(conv)
@@ -504,8 +513,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 	// add new message to conversation
 	receiveMsg := msg.Envelope.DataMessage
 	if receiveMsg.GroupInfo != nil {
-		// ignore group messages for now
-		return nil
+		return s.onGroupMessageReceived(msg)
 	}
 	contactNumber := msg.Envelope.Source
 	// if we have a name for this contact, use it
@@ -584,6 +592,60 @@ func (s *Siggo) onReceipt(msg *signal.Message) error {
 		}
 	}
 	conv.hasNewData = true
+	return nil
+}
+
+func (s *Siggo) onGroupMessageReceived(msg *signal.Message) error {
+	// add new message to conversation
+	receiveMsg := msg.Envelope.DataMessage
+	contactNumber := msg.Envelope.Source
+	groupID := msg.Envelope.DataMessage.GroupInfo.GroupID
+	groupName := msg.Envelope.DataMessage.GroupInfo.Name
+
+	g, ok := s.contacts[groupID]
+
+	if !ok {
+		// group not in contacts
+		g = &Contact{
+			Number:  groupID,
+			Name:    groupName,
+			isGroup: true,
+		}
+		log.Infof("New group: %v", g)
+		s.contacts[g.Number] = g
+	}
+
+	var fromStr string
+	c, ok := s.contacts[contactNumber]
+	if !ok {
+		// number not currently in contacts
+		c = s.newContact(contactNumber)
+		log.Infof("New contact: %v", c)
+		fromStr = contactNumber
+	} else if c.Name == "" {
+		fromStr = contactNumber
+	} else {
+		fromStr = c.Name
+	}
+	log.Debugf("new group message for group %v from contact %v", g, c)
+
+	message := &Message{
+		Content:     receiveMsg.Message,
+		From:        fromStr,
+		Timestamp:   receiveMsg.Timestamp,
+		IsDelivered: true,
+		IsRead:      false,
+		Attachments: ConvertAttachments(receiveMsg.Attachments, receiveMsg.Timestamp, false),
+	}
+
+	conv, ok := s.conversations[g]
+	if !ok {
+		log.Infof("new conversation for group: %v", g)
+		conv = s.newConversation(g)
+	}
+	conv.AddMessage(message)
+	s.NewInfo(conv)
+	s.sendNotification(g.String(), message.Content, c.Avatar())
 	return nil
 }
 
@@ -671,6 +733,9 @@ func (s *Siggo) init() {
 func (s *Siggo) getContacts() ContactList {
 	list := make(ContactList)
 	sig := signal.NewSignal(s.config.UserNumber)
+	highestIndex := 0
+
+	// get all contacts from disk
 	contacts, err := sig.GetContactList()
 	if err != nil {
 		log.Warnf("failed to read contacts from disk: %v", err)
@@ -687,6 +752,32 @@ func (s *Siggo) getContacts() ContactList {
 				Name:   c.Name,
 				Index:  *c.InboxPosition,
 				Alias:  alias,
+			}
+			if *c.InboxPosition > highestIndex {
+				highestIndex = *c.InboxPosition
+			}
+		}
+	}
+
+	// get all groups from disk
+	groups, err := sig.GetGroupList()
+	if err != nil {
+		log.Warnf("failed to read groups from disk: %v", err)
+		return list
+	}
+	for _, g := range groups {
+		if !g.Blocked && !g.Archived {
+			alias := ""
+			if s.config.ContactAliases != nil {
+				alias = s.config.ContactAliases[g.Name]
+			}
+			highestIndex++
+			list[g.GroupID] = &Contact{
+				Number:  g.GroupID,
+				Name:    g.Name,
+				Index:   highestIndex,
+				Alias:   alias,
+				isGroup: true,
 			}
 		}
 	}
