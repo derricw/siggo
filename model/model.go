@@ -242,8 +242,10 @@ func (c *Conversation) addMessage(message *Message) {
 	c.Messages[message.Timestamp] = message
 	if !ok {
 		// new messages
-		if !message.FromSelf {
+		if !message.FromSelf && !c.Contact.isGroup {
 			// apply alias if we need to
+			// should this happen earlier?
+			// TODO: messages should have a contact pointer so they can color and alias themselves
 			message.From = c.Contact.String()
 		}
 		c.MessageOrder = append(c.MessageOrder, message.Timestamp)
