@@ -31,19 +31,29 @@ type Contact struct {
 	Number  PhoneNumber
 	Name    string
 	Index   int
-	Alias   string
+	alias   string
+	color   string
 	isGroup bool
 }
 
 // String returns a string to display for this contact. Priority is Alias > Name > Number.
+// Groups get a cute little # indicator.
 func (c *Contact) String() string {
-	if c.Alias != "" {
-		return c.Alias
+	if c.alias != "" {
+		return c.alias
 	}
 	if c.Name != "" {
+		if c.isGroup {
+			return fmt.Sprintf("#%s", c.Name)
+		}
 		return c.Name
 	}
 	return c.Number
+}
+
+// Color returns the configured color highlight for incoming messages
+func (c *Contact) Color() string {
+	return c.color
 }
 
 // Avatar returns the path to the contact's avatar, if it can find it, otherwise ""
@@ -57,6 +67,12 @@ func (c *Contact) Avatar() string {
 		return ""
 	}
 	return path
+}
+
+// Configure applies a configuration to the contact (for now, an alias and custom color)
+func (c *Contact) Configure(cfg *Config) {
+	c.color = cfg.ContactColors[c.Name]
+	c.alias = cfg.ContactAliases[c.Name]
 }
 
 type ContactList map[PhoneNumber]*Contact
@@ -95,16 +111,24 @@ func (cl ContactList) SortedByIndex() []*Contact {
 
 type Message struct {
 	Content     string        `json:"content"`
-	From        string        `json:"from"`
 	Timestamp   int64         `json:"timestamp"`
 	IsDelivered bool          `json:"is_delivered"`
 	IsRead      bool          `json:"is_read"`
 	FromSelf    bool          `json:"from_self"`
 	Attachments []*Attachment `json:"attachments"`
+	From        string        `json:from"`
+	FromContact *Contact      `json:from_contact"`
 }
 
-func (m *Message) String(color string) string {
-	var fromStr = m.From
+func (m *Message) String() string {
+	var fromStr, color string
+	if !m.FromSelf {
+		fromStr = m.FromContact.String()
+		color = m.FromContact.Color()
+	} else {
+		fromStr = " ~ "
+	}
+
 	template := "%s|%s%s| %" + fmt.Sprintf("%dv", len(fromStr)) + ": %s\n"
 	data := fmt.Sprintf(template,
 		// lets come up with a way to avoid the *1000000
@@ -204,16 +228,15 @@ func ConvertAttachments(wire []*signal.Attachment, timestamp int64, fromSelf boo
 	return out
 }
 
-// Coversation is a contact and its associated messages
+// Coversation is a contact or group and its associated messages
 type Conversation struct {
-	Contact       *Contact
+	Contact       *Contact // can be a group!
 	Messages      map[int64]*Message
 	MessageOrder  []int64
 	HasNewMessage bool
 	StagedMessage string
 	// hasNewData tracks whether new data has been added
 	// since the last save to disk
-	color             string
 	hasNewData        bool
 	stagedAttachments []string
 }
@@ -222,14 +245,9 @@ type Conversation struct {
 func (c *Conversation) String() string {
 	out := ""
 	for _, k := range c.MessageOrder {
-		out += c.Messages[k].String(c.color)
+		out += c.Messages[k].String()
 	}
 	return out
-}
-
-// Color returns the configured color highlight for incoming messages
-func (c *Conversation) Color() string {
-	return c.color
 }
 
 // AddMessage appends a message to the conversation
@@ -242,10 +260,12 @@ func (c *Conversation) addMessage(message *Message) {
 	c.Messages[message.Timestamp] = message
 	if !ok {
 		// new messages
-		if !message.FromSelf {
-			// apply alias if we need to
-			message.From = c.Contact.String()
+		// TODO: this section is to prevent saved pre-groups conversations from breaking when
+		// loading.  it ensures that they have a contact. lets remove this after a few releases
+		if !message.FromSelf && message.FromContact == nil {
+			message.FromContact = c.Contact
 		}
+		// this we keep
 		c.MessageOrder = append(c.MessageOrder, message.Timestamp)
 		c.HasNewMessage = true
 		c.hasNewData = true
@@ -352,7 +372,8 @@ func (c *Conversation) Save() error {
 
 // Load will load a conversation saved @ `path`
 // TODO: load only the last N messages based on config
-func (c *Conversation) Load(path string) error {
+// HERE IS WHERE THE COLOR THE LOADED MESSAGES
+func (c *Conversation) Load(path string, cfg *Config) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
@@ -364,6 +385,9 @@ func (c *Conversation) Load(path string) error {
 		err := json.Unmarshal(s.Bytes(), msg)
 		if err != nil {
 			return err
+		}
+		if msg.FromContact != nil {
+			msg.FromContact.Configure(cfg)
 		}
 		c.addMessage(msg)
 	}
@@ -384,6 +408,7 @@ func NewConversation(contact *Contact) *Conversation {
 type SignalAPI interface {
 	Send(string, string) (int64, error)
 	SendDbus(string, string, ...string) (int64, error)
+	SendGroupDbus(string, string, ...string) (int64, error)
 	Receive() error
 	ReceiveForever()
 	Close()
@@ -422,7 +447,15 @@ func (s *Siggo) Send(msg string, contact *Contact) error {
 		conv = s.newConversation(contact)
 	}
 	// finally send the message
-	ID, err := s.signal.SendDbus(contact.Number, msg, conv.stagedAttachments...)
+	var ID int64
+	var err error
+	if !contact.isGroup {
+		log.Debugf("sending message to contact: %v", contact)
+		ID, err = s.signal.SendDbus(contact.Number, msg, conv.stagedAttachments...)
+	} else {
+		log.Debugf("sending message to group: %v", contact)
+		ID, err = s.signal.SendGroupDbus(contact.Number, msg, conv.stagedAttachments...)
+	}
 	if err != nil {
 		message.Content = fmt.Sprintf("FAILED TO SEND: %s ERROR: %v", message.Content, err)
 		s.NewInfo(conv)
@@ -504,8 +537,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 	// add new message to conversation
 	receiveMsg := msg.Envelope.DataMessage
 	if receiveMsg.GroupInfo != nil {
-		// ignore group messages for now
-		return nil
+		return s.onGroupMessageReceived(msg)
 	}
 	contactNumber := msg.Envelope.Source
 	// if we have a name for this contact, use it
@@ -534,6 +566,7 @@ func (s *Siggo) onReceived(msg *signal.Message) error {
 		IsDelivered: true,
 		IsRead:      false,
 		Attachments: ConvertAttachments(receiveMsg.Attachments, receiveMsg.Timestamp, false),
+		FromContact: c,
 	}
 	conv, ok := s.conversations[c]
 	if !ok {
@@ -584,6 +617,61 @@ func (s *Siggo) onReceipt(msg *signal.Message) error {
 		}
 	}
 	conv.hasNewData = true
+	return nil
+}
+
+func (s *Siggo) onGroupMessageReceived(msg *signal.Message) error {
+	// add new message to conversation
+	receiveMsg := msg.Envelope.DataMessage
+	contactNumber := msg.Envelope.Source
+	groupID := msg.Envelope.DataMessage.GroupInfo.GroupID
+	groupName := msg.Envelope.DataMessage.GroupInfo.Name
+
+	g, ok := s.contacts[groupID]
+
+	if !ok {
+		// group not in contacts
+		g = &Contact{
+			Number:  groupID,
+			Name:    groupName,
+			isGroup: true,
+		}
+		log.Infof("New group: %v", g)
+		s.contacts[g.Number] = g
+	}
+
+	var fromStr string
+	c, ok := s.contacts[contactNumber]
+	if !ok {
+		// number not currently in contacts
+		c = s.newContact(contactNumber)
+		log.Infof("New contact: %v", c)
+		fromStr = contactNumber
+	} else if c.Name == "" {
+		fromStr = contactNumber
+	} else {
+		fromStr = c.Name
+	}
+	log.Debugf("new group message for group %v from contact %v", g, c)
+
+	message := &Message{
+		Content:     receiveMsg.Message,
+		From:        fromStr,
+		Timestamp:   receiveMsg.Timestamp,
+		IsDelivered: true,
+		IsRead:      false,
+		Attachments: ConvertAttachments(receiveMsg.Attachments, receiveMsg.Timestamp, false),
+		FromContact: c,
+	}
+
+	conv, ok := s.conversations[g]
+	if !ok {
+		log.Infof("new conversation for group: %v", g)
+		conv = s.newConversation(g)
+	}
+	conv.AddMessage(message)
+	s.NewInfo(conv)
+	s.sendNotification(g.String(), message.Content, c.Avatar())
 	return nil
 }
 
@@ -671,6 +759,9 @@ func (s *Siggo) init() {
 func (s *Siggo) getContacts() ContactList {
 	list := make(ContactList)
 	sig := signal.NewSignal(s.config.UserNumber)
+	highestIndex := 0
+
+	// get all contacts from disk
 	contacts, err := sig.GetContactList()
 	if err != nil {
 		log.Warnf("failed to read contacts from disk: %v", err)
@@ -682,11 +773,41 @@ func (s *Siggo) getContacts() ContactList {
 			if s.config.ContactAliases != nil {
 				alias = s.config.ContactAliases[c.Name]
 			}
-			list[c.Number] = &Contact{
+			// check if we have a color for this contact
+			color := s.config.ContactColors[c.Name]
+			contact := &Contact{
 				Number: c.Number,
 				Name:   c.Name,
 				Index:  *c.InboxPosition,
-				Alias:  alias,
+				alias:  alias,
+				color:  color,
+			}
+			list[c.Number] = contact
+			if *c.InboxPosition > highestIndex {
+				highestIndex = *c.InboxPosition
+			}
+		}
+	}
+
+	// get all groups from disk
+	groups, err := sig.GetGroupList()
+	if err != nil {
+		log.Warnf("failed to read groups from disk: %v", err)
+		return list
+	}
+	for _, g := range groups {
+		if !g.Blocked && !g.Archived {
+			alias := ""
+			if s.config.ContactAliases != nil {
+				alias = s.config.ContactAliases[g.Name]
+			}
+			highestIndex++
+			list[g.GroupID] = &Contact{
+				Number:  g.GroupID,
+				Name:    g.Name,
+				Index:   highestIndex,
+				alias:   alias,
+				isGroup: true,
 			}
 		}
 	}
@@ -702,14 +823,10 @@ func (s *Siggo) getConversations() map[*Contact]*Conversation {
 		// check if we have a conversation file for this contact
 		if s.config.SaveMessages {
 			convPath := filepath.Join(ConversationFolder(), contact.Number)
-			err := conv.Load(convPath) // if we fail to load, oh well
+			err := conv.Load(convPath, s.config) // if we fail to load, oh well
 			if err == nil {
 				log.Infof("loaded conversation from: %s", contact.Name)
 			}
-		}
-		// check if we have a color for this contact
-		if color, ok := s.config.ContactColors[contact.Name]; ok {
-			conv.color = color
 		}
 		conv.CaughtUp()
 		conversations[contact] = conv

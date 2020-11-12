@@ -28,7 +28,7 @@ type SentMessage struct {
 	Message          string        `json:"message"`
 	ExpiresInSeconds int64         `json:"expiresInSeconds"`
 	Attachments      []*Attachment `json:"attachments"`
-	GroupInfo        interface{}   `json:"groupInfo"`
+	GroupInfo        GroupInfo     `json:"groupInfo"`
 	Destination      string        `json:"destination"`
 }
 
@@ -37,7 +37,7 @@ type DataMessage struct {
 	Message          string        `json:"message"`
 	ExpiresInSeconds int64         `json:"expiresInSeconds"`
 	Attachments      []*Attachment `json:"attachments"`
-	GroupInfo        interface{}   `json:"groupInfo"`
+	GroupInfo        *GroupInfo    `json:"groupInfo"`
 }
 
 type CallMessage interface{}

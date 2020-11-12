@@ -61,6 +61,10 @@ func (ms *MockSignal) SendDbus(dest, msg string, attachments ...string) (int64, 
 	return ms.Send(dest, msg)
 }
 
+func (ms *MockSignal) SendGroupDbus(groupID, msg string, attachments ...string) (int64, error) {
+	return ms.Send(groupID, msg)
+}
+
 func (ms *MockSignal) Receive() error {
 	r := bytes.NewReader(ms.exampleData)
 	scanner := bufio.NewScanner(r)

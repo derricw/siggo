@@ -60,14 +60,20 @@ type SignalContact struct {
 // SignalGroup is the data that signal-cli saves for each group
 // in SignalDataDir/<phonenumber>
 type SignalGroup struct {
-	GroupId               string        `json:"groupId"`
-	Name                  string        `json:"name"`
-	Members               []interface{} `json:"members"`
-	Color                 string        `json:"color"`
-	Blocked               bool          `json:"blocked"`
-	InboxPosition         int           `json:"inboxPosition"`
-	Archived              bool          `json:"archived"`
-	MessageExpirationTime int           `json:"messageExpirationTime"`
+	GroupID               string               `json:"groupId"`
+	Name                  string               `json:"name"`
+	Members               []*SignalGroupMember `json:"members"`
+	Color                 string               `json:"color"`
+	Blocked               bool                 `json:"blocked"`
+	InboxPosition         *int                 `json:"inboxPosition"`
+	Archived              bool                 `json:"archived"`
+	MessageExpirationTime int                  `json:"messageExpirationTime"`
+}
+
+// SignalGroupMember is a member of a signal group
+type SignalGroupMember struct {
+	UUID   string `json:"uuid"`
+	Number string `json:"number"`
 }
 
 // SignalUserData is the data signal saves for a given user
@@ -258,6 +264,27 @@ func (s *Signal) SendDbus(dest, msg string, attachments ...string) (int64, error
 		dest = fmt.Sprintf("+%s", dest)
 	}
 	args := []string{"--dbus", "send", dest, "-m", msg}
+	if len(attachments) > 0 {
+		// how do I do this in one line?
+		args = append(args, "-a")
+		args = append(args, attachments...)
+	}
+	cmd := exec.Command("signal-cli", args...)
+	out, err := cmd.Output()
+	if err != nil {
+		s.publishError(err)
+		return 0, err
+	}
+	ID, err := strconv.Atoi(string(out[:len(out)-1])) //strip newline
+	if err != nil {
+		return 0, err
+	}
+	return int64(ID), nil
+}
+
+// SendGroupDbus does the same thing as SendDbus but to a group
+func (s *Signal) SendGroupDbus(groupID, msg string, attachments ...string) (int64, error) {
+	args := []string{"--dbus", "send", "-g", groupID, "-m", msg}
 	if len(attachments) > 0 {
 		// how do I do this in one line?
 		args = append(args, "-a")

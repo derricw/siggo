@@ -67,7 +67,7 @@ func (cl *ContactListPanel) Render() {
 	for i, c := range sorted {
 		id := c.String()
 		line := fmt.Sprintf("%s", id)
-		color := convs[c].Color()
+		color := c.Color()
 		if cl.currentIndex == i {
 			line = fmt.Sprintf("[%s::r]%s[-::-]", color, line)
 		} else if convs[c].HasNewMessage {
