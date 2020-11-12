@@ -37,11 +37,15 @@ type Contact struct {
 }
 
 // String returns a string to display for this contact. Priority is Alias > Name > Number.
+// Groups get a cute little # indicator.
 func (c *Contact) String() string {
 	if c.alias != "" {
 		return c.alias
 	}
 	if c.Name != "" {
+		if c.isGroup {
+			return fmt.Sprintf("#%s", c.Name)
+		}
 		return c.Name
 	}
 	return c.Number
