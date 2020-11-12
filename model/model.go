@@ -176,7 +176,9 @@ func (m *Message) AddAttachments(paths []string) {
 	}
 }
 
-// Attachment is just a signal.Attachment for now
+// Attachment is any file sent or received. Received attachments are left in the usual `signal-cli`
+// location for now. It seems to automatically delete old attachments, so we may want to come up
+// with a way to keep our own copy somewhere in the siggo data folder.
 type Attachment struct {
 	ContentType string `json:"contentType"`
 	Filename    string `json:"filename"`
