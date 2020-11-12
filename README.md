@@ -14,6 +14,7 @@ A terminal ui for signal-cli, written in Go.
 * emoji support, just use colons, like `:cat:`
 * configurable contact [colors](config/README.md#configure-contact-colors)
 * can use [fzf](https://github.com/junegunn/fzf) to fuzzy-find files to attach
+* support for groups! (as of 0.8.0)
 
 ### Dependencies
 
@@ -47,6 +48,10 @@ make build
 ```
 bin/siggo
 ```
+
+### Updating
+
+If you are updating from a previous version, I recommend deleting your conversation files first. See below.
 
 ### Keybinds
 
@@ -125,7 +130,6 @@ Here is a list of features I'd like to add soonish.
   * colors and border styles
 * let user re-sort contact list (for example alphabetically)
 * command to go to contact with fuzzy matching
-* groups support
 * use dbus to send instead of signal-cli, to avoid having to spin up the JVM
 * there is still some data that I'm dropping on the floor (I believe it to be the "typing indicator" messages)
 * weechat/BitlBee plugin that uses the siggo model without the UI
