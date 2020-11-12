@@ -151,6 +151,8 @@ func NewOpenInput(parent *ChatWindow) *OpenInput {
 	oi.SetHighlightFullLine(true)
 	oi.ShowSecondaryText(false)
 	oi.SetBorder(true)
+	oi.SetTitle(fmt.Sprintf("attachments: %s", parent.currentContactName()))
+	oi.SetTitleAlign(0)
 	oi.init()
 	oi.SetCurrentItem(-1)
 

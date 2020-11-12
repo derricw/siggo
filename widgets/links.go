@@ -151,6 +151,8 @@ func NewLinksInput(parent *ChatWindow) *LinksInput {
 	li.SetHighlightFullLine(true)
 	li.ShowSecondaryText(false)
 	li.SetBorder(true)
+	li.SetTitle(fmt.Sprintf("urls: %s", parent.currentContactName()))
+	li.SetTitleAlign(0)
 	li.init()
 	li.SetCurrentItem(-1)
 

@@ -126,6 +126,8 @@ Here is a list of things that are currently broken.
 Here is a list of features I'd like to add soonish.
 * Better Attachments Support
   * signal-cli seems to delete old attachments after a while. maybe I should move them somewhere where they wont get deleted?
+* default color list for contacts instead of white
+* better mode indication
 * gui configuration
   * colors and border styles
 * let user re-sort contact list (for example alphabetically)

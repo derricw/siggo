@@ -259,6 +259,13 @@ func (c *ChatWindow) currentConversation() (*model.Conversation, error) {
 	}
 }
 
+func (c *ChatWindow) currentContactName() string {
+	if c.currentContact != nil {
+		return c.currentContact.String()
+	}
+	return ""
+}
+
 // SetCurrentContact sets the active contact
 func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
 	log.Debugf("setting current contact to: %v", contact)
