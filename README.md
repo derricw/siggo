@@ -14,7 +14,7 @@ A terminal ui for signal-cli, written in Go.
 * emoji support, just use colons, like `:cat:`
 * configurable contact [colors](config/README.md#configure-contact-colors)
 * can use [fzf](https://github.com/junegunn/fzf) to fuzzy-find files to attach
-* support for groups! (as of 0.8.0)
+* support for groups! (but not creating new groups)
 
 ### Dependencies
 
