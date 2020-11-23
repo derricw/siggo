@@ -11,7 +11,7 @@ A terminal ui for signal-cli, written in Go.
 
 * vim-style ux
 * useful for quick messages or use $EDITOR to compose fancy ones
-* emoji support, just use colons, like `:cat:`
+* emoji support, just use colons, like `:cat:` or [the kitty emoji picker](https://sw.kovidgoyal.net/kitty/kittens/unicode-input.html)
 * configurable contact [colors](config/README.md#configure-contact-colors)
 * can use [fzf](https://github.com/junegunn/fzf) to fuzzy-find files to attach
 * support for groups! (but not creating new groups)
