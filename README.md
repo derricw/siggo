@@ -18,7 +18,7 @@ A terminal ui for signal-cli, written in Go.
 
 ### Dependencies
 
-* [signal-cli](https://github.com/AsamK/signal-cli). (>=0.6.7)
+* [signal-cli](https://github.com/AsamK/signal-cli). (>=0.6.7 but I haven't tested with >=0.7.X yet)
 
 siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian) or `libmatthew-unix-java` (AUR) is required. There may be a `brew` forumla for dbus on MacOS.
 
