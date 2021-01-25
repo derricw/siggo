@@ -20,7 +20,7 @@ A terminal ui for signal-cli, written in Go.
 
 * [signal-cli](https://github.com/AsamK/signal-cli). (>=0.7.4)
 
-siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian) or `libmatthew-unix-java` (AUR) is required. There seems to be a `brew` [forumla](https://formulae.brew.sh/formula/dbus) for dbus on MacOS.
+siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian), `libmatthew-java` (Fedora) or `libmatthew-unix-java` (AUR) is required. There seems to be a `brew` [forumla](https://formulae.brew.sh/formula/dbus) for dbus on MacOS.
 
 Install signal-cli and put it somewhere safe in your path. You will need to follow its instructions to either [link](https://github.com/AsamK/signal-cli/wiki/Linking-other-devices-(Provisioning)) or [register](https://github.com/AsamK/signal-cli#usage) your device. The `siggo link <phonenumber> <devicename>` subcommand has been added to make linking more user-friendly, but has not been tested sufficiently. Be sure to prefix with `+` and country code (for example `+12345678901`).
 
