@@ -74,6 +74,7 @@ If you are updating from a previous version, I recommend deleting your conversat
   * `Enter` - Open selected link in browser
   * `ll` - Open Last URL
   * `y` - Yank selected link to clipboard
+* `p` or `CTRL+V` - Paste text/attach file in clipboard
 * `ESC` - Normal Mode
 * `CTRL+N` - Move to next conversation with unread messages
 * `CTRL+Q` - Quit (`CTRL+C` _should_ also work)
