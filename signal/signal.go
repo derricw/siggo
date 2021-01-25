@@ -60,14 +60,14 @@ type SignalContact struct {
 // SignalGroup is the data that signal-cli saves for each group
 // in SignalDataDir/<phonenumber>
 type SignalGroup struct {
-	GroupID               string               `json:"groupId"`
-	Name                  string               `json:"name"`
-	Members               []*SignalGroupMember `json:"members"`
-	Color                 string               `json:"color"`
-	Blocked               bool                 `json:"blocked"`
-	InboxPosition         *int                 `json:"inboxPosition"`
-	Archived              bool                 `json:"archived"`
-	MessageExpirationTime int                  `json:"messageExpirationTime"`
+	GroupID               string        `json:"groupId"`
+	Name                  string        `json:"name"`
+	Members               []interface{} `json:"members"`
+	Color                 string        `json:"color"`
+	Blocked               bool          `json:"blocked"`
+	InboxPosition         *int          `json:"inboxPosition"`
+	Archived              bool          `json:"archived"`
+	MessageExpirationTime int           `json:"messageExpirationTime"`
 }
 
 // SignalGroupMember is a member of a signal group
