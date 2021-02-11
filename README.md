@@ -11,16 +11,16 @@ A terminal ui for signal-cli, written in Go.
 
 * vim-style ux
 * useful for quick messages or use $EDITOR to compose fancy ones
-* emoji support, just use colons, like `:cat:`
+* emoji support, just use colons, like `:cat:` or [the kitty emoji picker](https://sw.kovidgoyal.net/kitty/kittens/unicode-input.html)
 * configurable contact [colors](config/README.md#configure-contact-colors)
 * can use [fzf](https://github.com/junegunn/fzf) to fuzzy-find files to attach
 * support for groups! (but not creating new groups)
 
 ### Dependencies
 
-* [signal-cli](https://github.com/AsamK/signal-cli). (>=0.6.7)
+* [signal-cli](https://github.com/AsamK/signal-cli). (>=0.7.4)
 
-siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian) or `libmatthew-unix-java` (AUR) is required. There may be a `brew` forumla for dbus on MacOS.
+siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian), `libmatthew-java` (Fedora) or `libmatthew-unix-java` (AUR) is required. There seems to be a `brew` [forumla](https://formulae.brew.sh/formula/dbus) for dbus on MacOS.
 
 Install signal-cli and put it somewhere safe in your path. You will need to follow its instructions to either [link](https://github.com/AsamK/signal-cli/wiki/Linking-other-devices-(Provisioning)) or [register](https://github.com/AsamK/signal-cli#usage) your device. The `siggo link <phonenumber> <devicename>` subcommand has been added to make linking more user-friendly, but has not been tested sufficiently. Be sure to prefix with `+` and country code (for example `+12345678901`).
 
@@ -37,7 +37,7 @@ siggo shells out to `signal-cli`, so if that worries you, don't use it, for now.
 
 ### Build
 
-siggo should build on Linux or MacOS, but it has only been tested on Linux.
+siggo should build on Linux or MacOS, but has primarily been tested on Linux.
 
 ```
 make build
@@ -74,6 +74,7 @@ If you are updating from a previous version, I recommend deleting your conversat
   * `Enter` - Open selected link in browser
   * `ll` - Open Last URL
   * `y` - Yank selected link to clipboard
+* `p` or `CTRL+V` - Paste text/attach file in clipboard
 * `ESC` - Normal Mode
 * `CTRL+N` - Move to next conversation with unread messages
 * `CTRL+Q` - Quit (`CTRL+C` _should_ also work)

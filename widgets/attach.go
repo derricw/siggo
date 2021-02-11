@@ -3,12 +3,16 @@ package widgets
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"mime"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
@@ -91,4 +95,51 @@ func FZFFile() (string, error) {
 	f := strings.TrimSpace(buf.String())
 	path := filepath.Join(usr.HomeDir, f)
 	return path, err
+}
+
+// AttachFromClipboard attaches a file directly from clipboard. Text is just pasted into the
+// message.
+func AttachFromClipboard(parent *ChatWindow) error {
+	content, err := clipboard.ReadAll()
+	if err != nil {
+		return err
+	}
+
+	contentBytes := []byte(content)
+	mimetype := http.DetectContentType(contentBytes)
+
+	if strings.HasPrefix(mimetype, "text/") {
+		// If clipboard contains text, paste it instead of attaching
+		parent.sendPanel.SetText(parent.sendPanel.GetText() + content)
+		parent.InsertMode()
+		return nil
+	}
+
+	ext, err := mime.ExtensionsByType(mimetype)
+	if err != nil {
+		return err
+	}
+
+	tmpFile, err := ioutil.TempFile("", "*"+ext[0])
+	if err != nil {
+		return err
+	}
+	if _, err = tmpFile.Write(contentBytes); err != nil {
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+
+	conv, err := parent.currentConversation()
+	if err != nil {
+		return err
+	}
+	if err := conv.AddAttachment(tmpFile.Name()); err != nil {
+		return err
+	}
+	parent.sendPanel.Update()
+	parent.InsertMode()
+
+	return nil
 }

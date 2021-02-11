@@ -29,6 +29,11 @@ build: $(BIN_DIR)
 		-ldflags "-X ${GIT_PATH}/${REPO_NAME}/version.GitCommit=${GIT_COMMIT} -X ${GIT_PATH}/${REPO_NAME}/version.BuildDate=${BUILD_DATE}" \
 		-o $(BIN_DIR)/$(BIN_NAME)
 
+build_linux: $(BIN_DIR)
+	GOOS=linux go build -v \
+		-ldflags "-X ${GIT_PATH}/${REPO_NAME}/version.GitCommit=${GIT_COMMIT} -X ${GIT_PATH}/${REPO_NAME}/version.BuildDate=${BUILD_DATE}" \
+		-o $(BIN_DIR)/$(BIN_NAME)
+
 build_darwin: $(BIN_DIR)
 	GOOS=darwin go build -v \
 		-ldflags "-X ${GIT_PATH}/${REPO_NAME}/version.GitCommit=${GIT_COMMIT} -X ${GIT_PATH}/${REPO_NAME}/version.BuildDate=${BUILD_DATE}" \
@@ -42,7 +47,7 @@ fmt: ; $(info running gofmt...) @ ## Run gofmt on all source files
 install: build $(INSTALL_DIR)
 	cp ${BIN_DIR}/${BIN_NAME} ${INSTALL_DIR}/${BIN_NAME}
 
-release_linux: build
+release_linux: build_linux
 	mkdir -p dist
 	tar czf dist/siggo-${VERSION}-linux-amd64.tar.gz bin/${BIN_NAME}
 

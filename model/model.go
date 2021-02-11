@@ -522,6 +522,11 @@ func (s *Siggo) ReceiveForever() {
 func (s *Siggo) onSent(msg *signal.Message) error {
 	// add new message to conversation
 	sentMsg := msg.Envelope.SyncMessage.SentMessage
+
+	if sentMsg.GroupInfo != nil {
+		return s.onGroupMessageSent(msg)
+	}
+
 	contactNumber := sentMsg.Destination
 	// if we have a name for this contact, use it
 	// otherwise it will be the phone number
@@ -691,6 +696,55 @@ func (s *Siggo) onGroupMessageReceived(msg *signal.Message) error {
 	conv.AddMessage(message)
 	s.NewInfo(conv)
 	s.sendNotification(g.String(), message.Content, c.Avatar())
+	return nil
+}
+
+func (s *Siggo) onGroupMessageSent(msg *signal.Message) error {
+	// add new message to conversation
+	sentMsg := msg.Envelope.SyncMessage.SentMessage
+	contactNumber := msg.Envelope.Source
+	groupID := msg.Envelope.SyncMessage.SentMessage.GroupInfo.GroupID
+	groupName := msg.Envelope.SyncMessage.SentMessage.GroupInfo.Name
+
+	g, ok := s.contacts[groupID]
+
+	if !ok {
+		// group not in contacts
+		g = &Contact{
+			Number:  groupID,
+			Name:    groupName,
+			isGroup: true,
+		}
+		log.Infof("New group: %v", g)
+		s.contacts[g.Number] = g
+	}
+
+	c, ok := s.contacts[contactNumber]
+	if !ok {
+		// number not currently in contacts
+		c = s.newContact(contactNumber)
+		log.Infof("New contact: %v", c)
+	}
+	log.Debugf("new group message for group %v from contact %v", g, c)
+
+	message := &Message{
+		Content:     sentMsg.Message,
+		From:        " ~ ",
+		Timestamp:   sentMsg.Timestamp,
+		IsDelivered: false,
+		IsRead:      false,
+		FromSelf:    true,
+		Attachments: ConvertAttachments(sentMsg.Attachments, sentMsg.Timestamp, false),
+		FromContact: c,
+	}
+
+	conv, ok := s.conversations[g]
+	if !ok {
+		log.Infof("new conversation for group: %v", g)
+		conv = s.newConversation(g)
+	}
+	conv.AddMessage(message)
+	s.NewInfo(conv)
 	return nil
 }
 

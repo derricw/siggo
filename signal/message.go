@@ -28,8 +28,10 @@ type SentMessage struct {
 	Message          string        `json:"message"`
 	ExpiresInSeconds int64         `json:"expiresInSeconds"`
 	Attachments      []*Attachment `json:"attachments"`
-	GroupInfo        GroupInfo     `json:"groupInfo"`
+	GroupInfo        *GroupInfo    `json:"groupInfo"`
 	Destination      string        `json:"destination"`
+	Mentions         interface{}   `json:"mentions"`
+	ViewOnce         bool          `json:"viewOnce"`
 }
 
 type DataMessage struct {

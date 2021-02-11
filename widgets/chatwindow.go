@@ -298,6 +298,15 @@ func (c *ChatWindow) NextUnreadMessage() error {
 	return nil
 }
 
+func (c *ChatWindow) Paste() error {
+	err := AttachFromClipboard(c)
+	if err != nil {
+		c.SetErrorStatus(err)
+	}
+
+	return err
+}
+
 // TODO: remove code duplication with ContactDown()
 func (c *ChatWindow) ContactUp() {
 	log.Debug("PREVIOUS CONVERSATION")
@@ -501,6 +510,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 65: // a
 				w.FancyAttach()
 				return nil
+			case 112: // p
+				w.Paste()
+				return nil
 			}
 			// pass some events on to the conversation panel
 		case tcell.KeyCtrlQ:
@@ -533,6 +545,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 		//return nil
 		case tcell.KeyCtrlN:
 			w.NextUnreadMessage()
+			return nil
+		case tcell.KeyCtrlV:
+			w.Paste()
 			return nil
 		}
 		return event
