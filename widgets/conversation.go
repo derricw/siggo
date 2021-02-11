@@ -3,19 +3,23 @@ package widgets
 import (
 	"fmt"
 
-	"github.com/derricw/siggo/model"
 	"github.com/rivo/tview"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/derricw/siggo/model"
 )
 
 type ConversationPanel struct {
 	*tview.TextView
 	hideTitle       bool
 	hidePhoneNumber bool
+	// only show messages matching a filter
+	filter string
 }
 
 func (p *ConversationPanel) Update(conv *model.Conversation) {
 	p.Clear()
-	p.SetText(conv.String())
+	p.SetText(conv.Filter(p.filter))
 	if !p.hideTitle {
 		if !p.hidePhoneNumber {
 			p.SetTitle(fmt.Sprintf("%s <%s>", conv.Contact.String(), conv.Contact.Number))
@@ -28,6 +32,11 @@ func (p *ConversationPanel) Update(conv *model.Conversation) {
 
 func (p *ConversationPanel) Clear() {
 	p.SetText("")
+}
+
+func (p *ConversationPanel) Filter(s string) {
+	log.Debugf("filtering converstaion: %s", s)
+	p.filter = s
 }
 
 func NewConversationPanel(siggo *model.Siggo) *ConversationPanel {

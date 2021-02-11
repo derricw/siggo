@@ -188,28 +188,22 @@ func (c *ChatWindow) FocusMe() {
 	c.app.SetFocus(c)
 }
 
-// ShowContactSearch opens a contact search panel
-func (c *ChatWindow) ShowContactSearch() {
-	log.Debug("SHOWING CONTACT SEARCH")
-	p := NewContactSearch(c)
-	c.searchPanel = p
-	c.SetRows(0, 3, p.maxHeight)
+// ShowAttachInput opens a commandPanel to choose a file to attach
+func (c *ChatWindow) ShowAttachInput() {
+	c.HideCommandInput() // only one at a time
+	log.Debug("SHOWING ATTACH INPUT")
+	p := NewAttachInput(c)
+	c.commandPanel = p
+	c.SetRows(0, 3, 1)
 	c.AddItem(p, 2, 0, 1, 2, 0, 0, false)
 	c.app.SetFocus(p)
 }
 
-// HideSearch hides any current search panel
-func (c *ChatWindow) HideSearch() {
-	log.Debug("HIDING SEARCH")
-	c.RemoveItem(c.searchPanel)
-	c.SetRows(0, 3)
-	c.FocusMe()
-}
-
-// ShowAttachInput opens a commandPanel to choose a file to attach
-func (c *ChatWindow) ShowAttachInput() {
-	log.Debug("SHOWING CONTACT SEARCH")
-	p := NewAttachInput(c)
+// ShowFilterInput opens a commandPanel to filter the conversation
+func (c *ChatWindow) ShowFilterInput() {
+	c.HideCommandInput() // only one at a time
+	log.Debug("SHOWING FILTER INPUT")
+	p := NewFilterInput(c)
 	c.commandPanel = p
 	c.SetRows(0, 3, 1)
 	c.AddItem(p, 2, 0, 1, 2, 0, 0, false)
@@ -220,7 +214,12 @@ func (c *ChatWindow) ShowAttachInput() {
 func (c *ChatWindow) HideCommandInput() {
 	log.Debug("HIDING COMMAND INPUT")
 	c.RemoveItem(c.commandPanel)
+	// TODO: this should happen automatically when i clear a FilterInput
+	// maybe command panel should be an interface with a "Close" method
+	// that does stuff like this
+	c.conversationPanel.Filter("")
 	c.SetRows(0, 3)
+	c.update()
 	c.FocusMe()
 }
 
@@ -232,7 +231,7 @@ func (c *ChatWindow) ShowStatusBar() {
 
 // HideStatusBar stops showing the status bar
 func (c *ChatWindow) HideStatusBar() {
-	c.RemoveItem(c.statusBar) // do we actually need to do this?
+	c.RemoveItem(c.statusBar)
 	c.SetRows(0, 3)
 }
 
@@ -441,59 +440,6 @@ func (c *ChatWindow) update() {
 	}
 }
 
-type SearchPanel struct {
-	*tview.Grid
-	list      *tview.TextView
-	input     *SearchInput
-	parent    *ChatWindow
-	maxHeight int
-}
-
-func (p *SearchPanel) Close() {
-	p.parent.HideSearch()
-}
-
-func NewContactSearch(parent *ChatWindow) *SearchPanel {
-	maxHeight := 10
-	p := &SearchPanel{
-		Grid:      tview.NewGrid().SetRows(maxHeight-3, 1),
-		list:      tview.NewTextView(),
-		parent:    parent,
-		maxHeight: maxHeight,
-	}
-	//contactList := parent.siggo.Contacts().SortedByName()
-	p.input = NewSearchInput(p)
-	p.AddItem(p.list, 0, 0, 1, 1, 0, 0, false)
-	p.AddItem(p.input, 1, 0, 1, 1, 0, 0, true)
-	p.SetBorder(true)
-	p.SetTitle("search contacts...")
-	return p
-}
-
-type SearchInput struct {
-	*tview.InputField
-	parent *SearchPanel
-}
-
-func NewSearchInput(parent *SearchPanel) *SearchInput {
-	si := &SearchInput{
-		InputField: tview.NewInputField(),
-		parent:     parent,
-	}
-	si.SetLabel("> ")
-	si.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// Setup keys
-		log.Debugf("Key Event <SEARCH>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
-		switch event.Key() {
-		case tcell.KeyESC:
-			si.parent.Close()
-			return nil
-		}
-		return event
-	})
-	return si
-}
-
 type StatusBar struct {
 	*tview.TextView
 	parent *ChatWindow
@@ -558,6 +504,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 97: // a
 				w.ShowAttachInput()
 				return nil
+			case 47: // /
+				w.ShowFilterInput()
+				return nil
 			case 65: // a
 				w.FancyAttach()
 				return nil
@@ -589,10 +538,11 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 		case tcell.KeyESC:
 			w.NormalMode()
 			w.HideStatusBar()
+			w.HideCommandInput()
 			return nil
-		case tcell.KeyCtrlT:
-			w.ShowContactSearch()
-			return nil
+		//case tcell.KeyCtrlT:
+		//w.ShowContactSearch()
+		//return nil
 		case tcell.KeyCtrlN:
 			w.NextUnreadMessage()
 			return nil

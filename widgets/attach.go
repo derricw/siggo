@@ -72,7 +72,7 @@ func NewAttachInput(parent *ChatWindow) *CommandInput {
 
 // FZFFile opens up FZF and fuzzy-searches for a file
 func FZFFile() (string, error) {
-	cmd := exec.Command("fzf")
+	cmd := exec.Command("fzf", "--prompt=attach: ", "--margin=10%,10%,10%,10%", "--border")
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	buf := bytes.NewBuffer([]byte{})
@@ -97,7 +97,8 @@ func FZFFile() (string, error) {
 	return path, err
 }
 
-// Attach a file directly from clipboard
+// AttachFromClipboard attaches a file directly from clipboard. Text is just pasted into the
+// message.
 func AttachFromClipboard(parent *ChatWindow) error {
 	content, err := clipboard.ReadAll()
 	if err != nil {
