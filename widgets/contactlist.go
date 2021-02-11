@@ -95,5 +95,6 @@ func NewContactListPanel(parent *ChatWindow, siggo *model.Siggo) *ContactListPan
 	c.SetTitle("contacts")
 	c.SetTitleAlign(0)
 	c.SetBorder(true)
+	c.SetWrap(false)
 	return c
 }

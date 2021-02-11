@@ -97,7 +97,8 @@ func FZFFile() (string, error) {
 	return path, err
 }
 
-// Attach a file directly from clipboard
+// AttachFromClipboard attaches a file directly from clipboard. Text is just pasted into the
+// message.
 func AttachFromClipboard(parent *ChatWindow) error {
 	content, err := clipboard.ReadAll()
 	if err != nil {
