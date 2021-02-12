@@ -36,7 +36,7 @@ type MockSignal struct {
 
 // Version just returns the last known compatible version of signal-cli
 func (ms *MockSignal) Version() (string, error) {
-	return "0.6.7", nil
+	return "0.7.4", nil
 }
 
 // Send just sends a fake message, by putting it on the "wire"

@@ -540,9 +540,6 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			w.HideStatusBar()
 			w.HideCommandInput()
 			return nil
-		//case tcell.KeyCtrlT:
-		//w.ShowContactSearch()
-		//return nil
 		case tcell.KeyCtrlN:
 			w.NextUnreadMessage()
 			return nil
@@ -577,7 +574,6 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 	// primitiv, row, col, rowSpan, colSpan, minGridHeight, maxGridHeight, focus)
 	// TODO: lets make some of the spans confiurable?
 	w.AddItem(w.contactsPanel, 0, 0, 2, 1, 0, 0, false)
-	//w.AddItem(w.conversationPanel, 0, 1, 1, 1, 0, 0, false)
 	w.ShowConversation()
 	w.AddItem(w.sendPanel, 1, 1, 1, 1, 0, 0, false)
 

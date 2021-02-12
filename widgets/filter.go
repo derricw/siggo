@@ -13,7 +13,6 @@ func NewFilterInput(parent *ChatWindow) *CommandInput {
 		parent:     parent,
 	}
 	ci.SetLabel("/")
-	//ci.SetText("")
 	ci.SetFieldBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
 	ci.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Setup keys
