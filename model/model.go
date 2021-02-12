@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"time"
 
@@ -248,6 +249,22 @@ func (c *Conversation) String() string {
 	out := ""
 	for _, k := range c.MessageOrder {
 		out += c.Messages[k].String()
+	}
+	return out
+}
+
+// Filter redners the conversation, but filters out any messages that don't have a regex match
+// TODO: eliminate code duplication with String()
+func (c *Conversation) Filter(pattern string) string {
+	if pattern == "" {
+		return c.String()
+	}
+	out := ""
+	for _, k := range c.MessageOrder {
+		s := c.Messages[k].String()
+		if found, err := regexp.MatchString(pattern, s); found == true || err != nil {
+			out += s
+		}
 	}
 	return out
 }

@@ -15,6 +15,7 @@ A terminal ui for signal-cli, written in Go.
 * configurable contact [colors](config/README.md#configure-contact-colors)
 * can use [fzf](https://github.com/junegunn/fzf) to fuzzy-find files to attach
 * support for groups! (but not creating new groups)
+* quickly filter messages by providing a regex pattern
 
 ### Dependencies
 
@@ -61,6 +62,7 @@ If you are updating from a previous version, I recommend deleting your conversat
 * `K` - Previous Contact
 * `a` - Attach file (sent with next message)
 * `A` - Use fzf to attach a file
+* `/` - Filter conversation by providing a pattern
 * `i` - Insert Mode
   * `CTRL+L` - Clear input field (also clears staged attachments)
 * `I` - Compose (opens $EDITOR and lets you make a fancy message)
