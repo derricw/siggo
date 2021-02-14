@@ -19,33 +19,24 @@ type ContactListPanel struct {
 }
 
 func (cl *ContactListPanel) Next() *model.Contact {
-	if cl.currentIndex < len(cl.sortedContacts)-1 {
-		cl.currentIndex++
-	} else {
-		cl.currentIndex = 0 // loop around
-	}
-	return cl.sortedContacts[cl.currentIndex]
+	return cl.GotoIndex(cl.currentIndex + 1)
 }
 
 func (cl *ContactListPanel) Previous() *model.Contact {
-	if cl.currentIndex > 0 {
-		cl.currentIndex--
-	} else {
-		cl.currentIndex = len(cl.sortedContacts) - 1 // loop around
-	}
-	return cl.sortedContacts[cl.currentIndex]
+	return cl.GotoIndex(cl.currentIndex - 1)
 }
 
 // GotoIndex goes to a particular contact index and return the Contact. Negative indexing is
 // allowed.
 func (cl *ContactListPanel) GotoIndex(index int) *model.Contact {
 	if index < 0 {
-		return cl.GotoIndex(len(cl.sortedContacts) - index)
+		return cl.GotoIndex(len(cl.sortedContacts) + index)
 	}
 	if index >= len(cl.sortedContacts) {
-		return cl.GotoIndex(-1)
+		index = 0
 	}
 	cl.currentIndex = index
+	cl.ScrollTo(cl.currentIndex, 0)
 	return cl.sortedContacts[index]
 }
 
