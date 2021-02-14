@@ -21,6 +21,8 @@ type ContactListPanel struct {
 func (cl *ContactListPanel) Next() *model.Contact {
 	if cl.currentIndex < len(cl.sortedContacts)-1 {
 		cl.currentIndex++
+	} else {
+		cl.currentIndex = 0 // loop around
 	}
 	return cl.sortedContacts[cl.currentIndex]
 }
@@ -28,6 +30,8 @@ func (cl *ContactListPanel) Next() *model.Contact {
 func (cl *ContactListPanel) Previous() *model.Contact {
 	if cl.currentIndex > 0 {
 		cl.currentIndex--
+	} else {
+		cl.currentIndex = len(cl.sortedContacts) - 1 // loop around
 	}
 	return cl.sortedContacts[cl.currentIndex]
 }
