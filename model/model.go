@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/derricw/siggo/signal"
@@ -842,15 +843,18 @@ func (s *Siggo) getContacts() ContactList {
 	}
 	for _, c := range contacts {
 		if c.InboxPosition != nil {
+			// strip the weird-ass unicode that we seem to be reading
+			// for some unknown reason
+			name := strings.Trim(c.Name, "\u2068\u2069")
 			alias := ""
 			if s.config.ContactAliases != nil {
-				alias = s.config.ContactAliases[c.Name]
+				alias = s.config.ContactAliases[name]
 			}
 			// check if we have a color for this contact
-			color := s.config.ContactColors[c.Name]
+			color := s.config.ContactColors[name]
 			contact := &Contact{
 				Number: c.Number,
-				Name:   c.Name,
+				Name:   name,
 				Index:  *c.InboxPosition,
 				alias:  alias,
 				color:  color,
