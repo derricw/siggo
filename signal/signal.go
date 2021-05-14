@@ -70,6 +70,17 @@ type SignalGroup struct {
 	MessageExpirationTime int           `json:"messageExpirationTime"`
 }
 
+type SignalGroupInfo struct {
+	ID                string      `json:"id"`
+	Name              string      `json:"name"`
+	IsMember          bool        `json:"isMember"`
+	IsBlocked         bool        `json:"isBlocked"`
+	Members           []string    `json:"members"`
+	PendingMembers    []string    `json:"pendingMembers"`
+	RequestingMembers []string    `json:"requestingMembers"`
+	GroupInviteLink   interface{} `json:"groupInviteLink"`
+}
+
 // SignalGroupMember is a member of a signal group
 type SignalGroupMember struct {
 	UUID   string `json:"uuid"`
@@ -202,7 +213,7 @@ func (s *Signal) ReceiveForever() {
 
 // Daemon starts the dbus daemon and receives forever.
 func (s *Signal) Daemon() error {
-	cmd := exec.Command("signal-cli", "-u", s.uname, "daemon", "--json")
+	cmd := exec.Command("signal-cli", "-o", "json", "-u", s.uname, "daemon")
 
 	//  This is the only way to ensure that the signal-cli daemon is killed when we get
 	//  SIGKILL, but it isn't available on MacOS, so we leave it commented out for now.
@@ -259,6 +270,7 @@ func (s *Signal) Send(dest, msg string) (int64, error) {
 }
 
 // SendDbus does the same thing as Send but it goes through a running daemon.
+// Returns the message ID
 func (s *Signal) SendDbus(dest, msg string, attachments ...string) (int64, error) {
 	if !strings.HasPrefix(dest, "+") {
 		dest = fmt.Sprintf("+%s", dest)
@@ -301,6 +313,21 @@ func (s *Signal) SendGroupDbus(groupID, msg string, attachments ...string) (int6
 		return 0, err
 	}
 	return int64(ID), nil
+}
+
+// RequestGroupInfo requests info for all groups from the Signal network
+func (s *Signal) RequestGroupInfo() ([]SignalGroupInfo, error) {
+	cmd := exec.Command("signal-cli", "-o", "json", "-u", s.uname, "listGroups")
+	out, err := cmd.Output()
+	if err != nil {
+		s.publishError(err)
+		return nil, err
+	}
+	groupInfo := []SignalGroupInfo{}
+	if err = json.Unmarshal(out, &groupInfo); err != nil {
+		return nil, err
+	}
+	return groupInfo, nil
 }
 
 // Link will attempt to link to an existing registered device.

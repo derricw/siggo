@@ -86,6 +86,10 @@ func (ms *MockSignal) ReceiveForever() {
 	}()
 }
 
+func (ms *MockSignal) RequestGroupInfo() ([]SignalGroupInfo, error) {
+	return []SignalGroupInfo{}, nil
+}
+
 func (ms *MockSignal) Close() {}
 
 func NewMockSignal(userNumber string, exampleData []byte) *MockSignal {
