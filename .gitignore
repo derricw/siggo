@@ -3,3 +3,4 @@ examples.json
 dist
 cov.cov
 coverage.html
+*.swp

@@ -430,6 +430,7 @@ type SignalAPI interface {
 	SendDbus(string, string, ...string) (int64, error)
 	SendGroupDbus(string, string, ...string) (int64, error)
 	Receive() error
+	RequestGroupInfo() ([]signal.SignalGroupInfo, error)
 	ReceiveForever()
 	Close()
 	OnReceived(signal.ReceivedCallback)
@@ -444,6 +445,7 @@ type Siggo struct {
 	conversations map[*Contact]*Conversation
 	contactOrder  []*Contact
 	signal        SignalAPI
+	initialized   chan bool
 
 	NewInfo    func(*Conversation)
 	ErrorEvent func(error)
@@ -515,9 +517,12 @@ func (s *Siggo) Receive() error {
 	return s.signal.Receive()
 }
 
-// ReceiveForever
+// ReceiveForever waits until initialzation is complete, then starts the daemon.
 func (s *Siggo) ReceiveForever() {
-	s.signal.ReceiveForever()
+	go func() {
+		<-s.initialized
+		s.signal.ReceiveForever()
+	}()
 }
 
 func (s *Siggo) onSent(msg *signal.Message) error {
@@ -804,8 +809,9 @@ func (s *Siggo) Quit() {
 // NewSiggo creates a new model
 func NewSiggo(sig SignalAPI, config *Config) *Siggo {
 	s := &Siggo{
-		config: config,
-		signal: sig,
+		config:      config,
+		signal:      sig,
+		initialized: make(chan bool),
 
 		NewInfo:    func(*Conversation) {}, // noop
 		ErrorEvent: func(error) {},         // noop
@@ -827,6 +833,7 @@ func (s *Siggo) init() {
 		self.Name = s.config.UserName
 	}
 	s.conversations = s.getConversations()
+	go s.refreshGroupNames() // will signal s.initialized when finished
 }
 
 // getContacts reads a fresh contact list from disk for the configured user
@@ -909,4 +916,25 @@ func (s *Siggo) getConversations() map[*Contact]*Conversation {
 		conversations[contact] = conv
 	}
 	return conversations
+}
+
+// refreshGroupNames requests an updated list of group names from the Signal network
+// and updates our contact list with them. For now, we just run this once after init. We may want
+// to run it whenever we discover a new group.
+func (s *Siggo) refreshGroupNames() {
+	defer func() { s.initialized <- true }()
+	log.Debug("refreshing group names with Signal network")
+	info, err := s.signal.RequestGroupInfo()
+	if err != nil {
+		log.Errorf("failed to request group info from Signal network: %s", err)
+		return
+	}
+	for _, group := range info {
+		log.Printf("groups found: %+v", group)
+		if s.contacts[group.ID] != nil {
+			log.Printf("replacing group %s with '%s'", group.ID, group.Name)
+			s.contacts[group.ID].Name = group.Name
+			s.NewInfo(nil)
+		}
+	}
 }
