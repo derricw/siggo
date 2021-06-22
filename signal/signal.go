@@ -45,7 +45,8 @@ func GetSignalAvatarsFolder() (string, error) {
 }
 
 // SignalContact is the data signal-cli saves for each contact
-// in SignalDataDir/<phonenumber>
+// in SignalDataDir/<phonenumber>.
+// This structure no longer exists as of signal-cli >= 0.8.2
 type SignalContact struct {
 	Name                  string `json:"name"`
 	Number                string `json:"number"`
@@ -55,6 +56,48 @@ type SignalContact struct {
 	Blocked               bool   `json:"blocked"`
 	InboxPosition         *int   `json:"inboxPosition"`
 	Archived              bool   `json:"archived"`
+}
+
+// SignalRecipient is the format used in the `recipients-store` file.
+type SignalRecipient struct {
+	ID                   int         `json:"id"`
+	Number               string      `json:"number"`
+	UUID                 string      `json:"uuid"`
+	Profile              interface{} `json:"profile"`
+	ProfileKey           string      `json:"profileKey"`
+	ProfileKeyCredential interface{} `json:"profileKeyCredential"`
+	Contact              struct {
+		Name                  string `json:"name"`
+		Color                 string `json:"color"`
+		MessageExpirationTime int    `json:"messageExpirationTime"`
+		Blocked               bool   `json:"blocked"`
+		Archived              bool   `json:"archived"`
+	} `json:"contact"`
+}
+
+func (r *SignalRecipient) AsContact() *SignalContact {
+	return &SignalContact{
+		Name:                  r.Contact.Name,
+		Number:                r.Number,
+		Color:                 r.Contact.Color,
+		MessageExpirationTime: r.Contact.MessageExpirationTime,
+		ProfileKey:            r.ProfileKey,
+		Blocked:               r.Contact.Blocked,
+		Archived:              r.Contact.Archived,
+	}
+}
+
+// SignalRecipientStore
+type SignalRecipientStore struct {
+	Recipients []*SignalRecipient `json:"recipients"`
+}
+
+func (r *SignalRecipientStore) AsContacts() []*SignalContact {
+	contacts := []*SignalContact{}
+	for _, c := range r.Recipients {
+		contacts = append(contacts, c.AsContact())
+	}
+	return contacts
 }
 
 // SignalGroup is the data that signal-cli saves for each group
@@ -352,6 +395,7 @@ func (s *Signal) Link(deviceName string) error {
 }
 
 // GetUserData returns the user data for the current user.
+// this is where the contact list is kept for signal-cli < 0.8.2
 func (s *Signal) GetUserData() (*SignalUserData, error) {
 	usr, err := user.Current()
 	if err != nil {
@@ -370,13 +414,45 @@ func (s *Signal) GetUserData() (*SignalUserData, error) {
 	return userData, nil
 }
 
+// GetRecipientStore gets the recipient store. This is where the contacts list is kept in
+// signal-cli >= 0.8.2
+func (s *Signal) GetRecipientStore() (*SignalRecipientStore, error) {
+	usr, err := user.Current()
+	if err != nil {
+		return nil, err
+	}
+	homeDir := usr.HomeDir
+	dataFile := fmt.Sprintf("%s/%s/%s.d/recipients-store", homeDir, SignalDataDir, s.uname)
+	b, err := ioutil.ReadFile(dataFile)
+	if err != nil {
+		return nil, err
+	}
+	store := &SignalRecipientStore{}
+	if err = json.Unmarshal(b, store); err != nil {
+		return nil, err
+	}
+	return store, nil
+}
+
 // GetContactList attempts to read an existing contact list from the signal user directory.
 func (s *Signal) GetContactList() ([]*SignalContact, error) {
 	userData, err := s.GetUserData()
 	if err != nil {
 		return nil, err
 	}
-	return userData.ContactStore.Contacts, nil
+	c := userData.ContactStore.Contacts
+	if len(c) > 0 {
+		// contacts stored in user data
+		// signal-cli <=0.8.1
+		return c, nil
+	}
+
+	recipients, err := s.GetRecipientStore()
+	if err != nil {
+		return nil, err
+	}
+	// recipients stored in `recipients-store` file
+	return recipients.AsContacts(), nil
 }
 
 // GetGroupList attempts to read an existing contact list from the signal user directory.
