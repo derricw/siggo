@@ -93,7 +93,7 @@ type SignalRecipientStore struct {
 }
 
 func (r *SignalRecipientStore) AsContacts() []*SignalContact {
-	contacts := []*SignalContact{}
+	contacts := make([]*SignalContact, 0)
 	for _, c := range r.Recipients {
 		contacts = append(contacts, c.AsContact())
 	}

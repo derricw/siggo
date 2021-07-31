@@ -849,28 +849,24 @@ func (s *Siggo) getContacts() ContactList {
 		return list
 	}
 	for _, c := range contacts {
-		if c.InboxPosition != nil {
-			// strip the weird-ass unicode that we seem to be reading
-			// for some unknown reason
-			name := strings.Trim(c.Name, "\u2068\u2069")
-			alias := ""
-			if s.config.ContactAliases != nil {
-				alias = s.config.ContactAliases[name]
-			}
-			// check if we have a color for this contact
-			color := s.config.ContactColors[name]
-			contact := &Contact{
-				Number: c.Number,
-				Name:   name,
-				Index:  *c.InboxPosition,
-				alias:  alias,
-				color:  color,
-			}
-			list[c.Number] = contact
-			if *c.InboxPosition > highestIndex {
-				highestIndex = *c.InboxPosition
-			}
+		// strip the weird-ass unicode that we seem to be reading
+		// for some unknown reason
+		name := strings.Trim(c.Name, "\u2068\u2069")
+		alias := ""
+		if s.config.ContactAliases != nil {
+			alias = s.config.ContactAliases[name]
 		}
+		// check if we have a color for this contact
+		color := s.config.ContactColors[name]
+		contact := &Contact{
+			Number: c.Number,
+			Name:   name,
+			Index:  highestIndex,
+			alias:  alias,
+			color:  color,
+		}
+		list[c.Number] = contact
+		highestIndex++
 	}
 
 	// get all groups from disk
