@@ -22,6 +22,7 @@ var linkCmd = &cobra.Command{
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("linking...")
+		fmt.Println("In the mobile app, go to Settings -> Linked Devices -> Add")
 		sig := signal.NewSignal(args[0])
 		sig.Link(args[1])
 
