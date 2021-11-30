@@ -103,25 +103,29 @@ func (r *SignalRecipientStore) AsContacts() []*SignalContact {
 // SignalGroup is the data that signal-cli saves for each group
 // in SignalDataDir/<phonenumber>
 type SignalGroup struct {
-	GroupID               string        `json:"groupId"`
-	Name                  string        `json:"name"`
-	Members               []interface{} `json:"members"`
-	Color                 string        `json:"color"`
-	Blocked               bool          `json:"blocked"`
-	InboxPosition         *int          `json:"inboxPosition"`
-	Archived              bool          `json:"archived"`
-	MessageExpirationTime int           `json:"messageExpirationTime"`
+	GroupID          string `json:"groupId"`
+	MasterKey        string `json:"masterKey"`
+	Blocked          bool   `json:"blocked"`
+	PermissionDenied bool   `json:"permissionDenied"`
 }
 
+// SignalGroupInfo is the data that is retrived for each group when we call
+// `signal-cli listGroups` As far as I know right now that is the only way to
+// get the group names. They don't appear to be saved in signal-cli's data.
 type SignalGroupInfo struct {
-	ID                string      `json:"id"`
-	Name              string      `json:"name"`
-	IsMember          bool        `json:"isMember"`
-	IsBlocked         bool        `json:"isBlocked"`
-	Members           []string    `json:"members"`
-	PendingMembers    []string    `json:"pendingMembers"`
-	RequestingMembers []string    `json:"requestingMembers"`
-	GroupInviteLink   interface{} `json:"groupInviteLink"`
+	ID                    string              `json:"id"`
+	Name                  string              `json:"name"`
+	IsMember              bool                `json:"isMember"`
+	IsBlocked             bool                `json:"isBlocked"`
+	Description           string              `json:"description"`
+	Members               []SignalGroupMember `json:"members"`
+	Admins                []SignalGroupMember `json:"admins"`
+	PendingMembers        []interface{}       `json:"pendingMembers"`
+	RequestingMembers     []interface{}       `json:"requestingMembers"`
+	GroupInviteLink       interface{}         `json:"groupInviteLink"`
+	PermissionAddMember   string              `json:"permissionAddMember"`
+	PermissionEditDetails string              `json:"permissionEditDetails"`
+	PermissionSendMessage string              `json:"permissionSendMessage"`
 }
 
 // SignalGroupMember is a member of a signal group
@@ -436,17 +440,6 @@ func (s *Signal) GetRecipientStore() (*SignalRecipientStore, error) {
 
 // GetContactList attempts to read an existing contact list from the signal user directory.
 func (s *Signal) GetContactList() ([]*SignalContact, error) {
-	userData, err := s.GetUserData()
-	if err != nil {
-		return nil, err
-	}
-	c := userData.ContactStore.Contacts
-	if len(c) > 0 {
-		// contacts stored in user data
-		// signal-cli <=0.8.1
-		return c, nil
-	}
-
 	recipients, err := s.GetRecipientStore()
 	if err != nil {
 		return nil, err
