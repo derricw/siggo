@@ -876,15 +876,15 @@ func (s *Siggo) getContacts() ContactList {
 		return list
 	}
 	for _, g := range groups {
-		if !g.Blocked && !g.Archived {
+		if !g.Blocked {
 			alias := ""
 			if s.config.ContactAliases != nil {
-				alias = s.config.ContactAliases[g.Name]
+				alias = s.config.ContactAliases[g.GroupID]
 			}
 			highestIndex++
 			list[g.GroupID] = &Contact{
 				Number:  g.GroupID,
-				Name:    g.Name,
+				Name:    g.GroupID, // we <currently> have to make another call to get the name
 				Index:   highestIndex,
 				alias:   alias,
 				isGroup: true,
