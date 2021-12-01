@@ -111,6 +111,28 @@ func (cl ContactList) SortedByIndex() []*Contact {
 	return list
 }
 
+// StringSlice returns the contact list as a string slice
+func (cl ContactList) StringSlice() []string {
+	list := cl.SortedByName()
+	s := []string{}
+	for _, contact := range list {
+		s = append(s, contact.String())
+	}
+	return s
+}
+
+// FindContact searches the contact list for the first contact whose name matches the
+// supplied pattern. Returns nil if no match is found.
+func (cl ContactList) FindContact(pattern string) *Contact {
+	for _, contact := range cl {
+		// TODO: replace with regex pattern matching
+		if pattern == contact.Name || pattern == contact.alias || pattern == contact.String() {
+			return contact
+		}
+	}
+	return nil
+}
+
 type Message struct {
 	Content     string        `json:"content"`
 	Timestamp   int64         `json:"timestamp"`

@@ -60,6 +60,7 @@ If you are updating from a previous version, I recommend deleting your conversat
 * `k` - Scroll Up
 * `J` - Next Contact
 * `K` - Previous Contact
+* `T` - Use fzf to goto contact with fuzzy matching
 * `a` - Attach file (sent with next message)
 * `A` - Use fzf to attach a file
 * `/` - Filter conversation by providing a pattern
@@ -134,7 +135,6 @@ Here is a list of features I'd like to add soonish.
 * gui configuration
   * colors and border styles
 * let user re-sort contact list (for example alphabetically)
-* command to go to contact with fuzzy matching
 * use dbus to send instead of signal-cli, to avoid having to spin up the JVM
 * there is still some data that I'm dropping on the floor (I believe it to be the "typing indicator" messages)
 * weechat/BitlBee plugin that uses the siggo model without the UI
