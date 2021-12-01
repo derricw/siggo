@@ -1,15 +1,10 @@
 package widgets
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"mime"
 	"net/http"
-	"os"
-	"os/exec"
-	"os/user"
-	"path/filepath"
 	"strings"
 
 	"github.com/atotto/clipboard"
@@ -68,33 +63,6 @@ func NewAttachInput(parent *ChatWindow) *CommandInput {
 		return event
 	})
 	return ci
-}
-
-// FZFFile opens up FZF and fuzzy-searches for a file
-func FZFFile() (string, error) {
-	cmd := exec.Command("fzf", "--prompt=attach: ", "--margin=10%,10%,10%,10%", "--border")
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-	buf := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buf
-	usr, err := user.Current()
-	if err != nil {
-		// if we can find home, we run fzf from there
-		return "", err
-	}
-	cmd.Dir = usr.HomeDir
-
-	if err = cmd.Run(); cmd.ProcessState.ExitCode() == 130 {
-		// exit code 130 is when we cancel FZF
-		// not an error
-		return "", nil
-	} else if err != nil {
-		return "", fmt.Errorf("failed to find a file: %s", err)
-	}
-
-	f := strings.TrimSpace(buf.String())
-	path := filepath.Join(usr.HomeDir, f)
-	return path, err
 }
 
 // AttachFromClipboard attaches a file directly from clipboard. Text is just pasted into the

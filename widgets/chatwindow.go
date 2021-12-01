@@ -283,6 +283,17 @@ func (c *ChatWindow) SetCurrentContact(contact *model.Contact) error {
 	return nil
 }
 
+// SetCurrentContactByString sets the active contact to the first contact whose
+// string representation matches
+func (c *ChatWindow) SetCurrentContactByString(contactName string) error {
+	log.Debugf("setting current contact to: %v", contactName)
+	contact := c.siggo.Contacts().FindContact(contactName)
+	if contact != nil {
+		return c.SetCurrentContact(contact)
+	}
+	return fmt.Errorf("couldn't find contact: %s", contactName)
+}
+
 // NextUnreadMessage searches for the next conversation with unread messages and makes that the
 // active conversation.
 func (c *ChatWindow) NextUnreadMessage() error {
@@ -392,6 +403,33 @@ func (c *ChatWindow) FancyAttach() {
 		}
 		c.sendPanel.Update()
 		c.InsertMode()
+	}
+}
+
+// FuzzyGoTo goes to a contact or group with fuzzy matching
+func (c *ChatWindow) FuzzyGoTo() {
+	contactName := ""
+	var err error
+	_, err = exec.LookPath("fzf")
+	if err != nil {
+		c.SetErrorStatus(fmt.Errorf("failed to find in PATH: fzf"))
+		return
+	}
+	contactList := c.siggo.Contacts().StringSlice()
+	success := c.app.Suspend(func() {
+		contactName, err = FZFList(contactList)
+	})
+	time.Sleep(100 * time.Millisecond)
+	if !success {
+		c.SetErrorStatus(fmt.Errorf("failed to suspend siggo"))
+		return
+	}
+	if err != nil {
+		c.SetErrorStatus(err)
+	}
+	if contactName != "" {
+		log.Infof("going to contact: %s", contactName)
+		c.SetCurrentContactByString(contactName)
 	}
 }
 
@@ -507,8 +545,11 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 47: // /
 				w.ShowFilterInput()
 				return nil
-			case 65: // a
+			case 65: // A
 				w.FancyAttach()
+				return nil
+			case 116: // t
+				w.FuzzyGoTo()
 				return nil
 			case 112: // p
 				w.Paste()
