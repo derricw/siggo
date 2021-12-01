@@ -554,6 +554,9 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 112: // p
 				w.Paste()
 				return nil
+			case 110: // n
+				w.NextUnreadMessage()
+				return nil
 			}
 			// pass some events on to the conversation panel
 		case tcell.KeyCtrlQ:

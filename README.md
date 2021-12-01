@@ -66,6 +66,7 @@ If you are updating from a previous version, I recommend deleting your conversat
 * `k` - Scroll Up
 * `J` - Next Contact
 * `K` - Previous Contact
+* `n` - Move to next conversation with unread messages
 * `t` - Use fzf to goto contact with fuzzy matching
 * `a` - Attach file (sent with next message)
 * `A` - Use fzf to attach a file
@@ -85,7 +86,6 @@ If you are updating from a previous version, I recommend deleting your conversat
   * `y` - Yank selected link to clipboard
 * `p` or `CTRL+V` - Paste text/attach file in clipboard
 * `ESC` - Normal Mode
-* `CTRL+N` - Move to next conversation with unread messages
 * `CTRL+Q` - Quit (`CTRL+C` _should_ also work)
 
 ### Configuration
