@@ -548,7 +548,7 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 			case 65: // A
 				w.FancyAttach()
 				return nil
-			case 84: // A
+			case 116: // t
 				w.FuzzyGoTo()
 				return nil
 			case 112: // p

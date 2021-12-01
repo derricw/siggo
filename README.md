@@ -60,7 +60,7 @@ If you are updating from a previous version, I recommend deleting your conversat
 * `k` - Scroll Up
 * `J` - Next Contact
 * `K` - Previous Contact
-* `T` - Use fzf to goto contact with fuzzy matching
+* `t` - Use fzf to goto contact with fuzzy matching
 * `a` - Attach file (sent with next message)
 * `A` - Use fzf to attach a file
 * `/` - Filter conversation by providing a pattern
