@@ -121,6 +121,21 @@ func (cl ContactList) StringSlice() []string {
 	return s
 }
 
+// AllNames returns a slice of all aliases and names in the entire contact list
+func (cl ContactList) AllNames() []string {
+	list := cl.SortedByName()
+	s := []string{}
+	for _, contact := range list {
+		if contact.alias != "" {
+			s = append(s, contact.alias)
+		}
+		if contact.Name != "" {
+			s = append(s, contact.Name)
+		}
+	}
+	return s
+}
+
 // FindContact searches the contact list for the first contact whose name matches the
 // supplied pattern. Returns nil if no match is found.
 func (cl ContactList) FindContact(pattern string) *Contact {

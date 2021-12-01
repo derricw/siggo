@@ -415,7 +415,7 @@ func (c *ChatWindow) FuzzyGoTo() {
 		c.SetErrorStatus(fmt.Errorf("failed to find in PATH: fzf"))
 		return
 	}
-	contactList := c.siggo.Contacts().StringSlice()
+	contactList := c.siggo.Contacts().AllNames()
 	success := c.app.Suspend(func() {
 		contactName, err = FZFList(contactList)
 	})

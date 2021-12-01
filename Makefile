@@ -55,3 +55,4 @@ release_darwin: build_darwin
 	mkdir -p dist
 	tar czf dist/siggo-${VERSION}-darwin-amd64.tar.gz bin/${BIN_NAME}
 
+release_all: release_linux release_darwin

@@ -32,6 +32,12 @@ signal-cli -u +<yourphonenumber> -o json receive
 ```
 You are now ready to use `siggo`.
 
+#### Optional Dependencies
+
+* [fzf](https://github.com/junegunn/fzf)
+
+Some nice features are available if you have `fzf` in your PATH.
+
 ### Security
 
 siggo shells out to `signal-cli`, so if that worries you, don't use it, for now. I have lofty goals of eventually replacing this with [libsignal](https://github.com/signalapp/libsignal-protocol-c).
