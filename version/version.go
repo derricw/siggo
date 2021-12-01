@@ -7,7 +7,7 @@ import (
 
 var (
 	GitCommit string
-	Version   = "0.11.2"
+	Version   = "0.12.0"
 	BuildDate = ""
 	GoVersion = runtime.Version()
 	OsArch    = fmt.Sprintf("%s %s", runtime.GOOS, runtime.GOARCH)
