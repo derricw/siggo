@@ -428,7 +428,7 @@ func (c *ChatWindow) FuzzyGoTo() {
 		c.SetErrorStatus(err)
 	}
 	if contactName != "" {
-		log.Info("going to contact: %s", contactName)
+		log.Infof("going to contact: %s", contactName)
 		c.SetCurrentContactByString(contactName)
 	}
 }
