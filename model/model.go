@@ -16,12 +16,12 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var DeliveryStatus = map[bool]string{
+var DeliveryStatus map[bool]string = map[bool]string{
 	true:  "✓",
 	false: "X",
 }
 
-var ReadStatus = map[bool]string{
+var ReadStatus map[bool]string = map[bool]string{
 	true:  "✓",
 	false: "X",
 }

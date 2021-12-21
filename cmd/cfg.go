@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gdamore/tcell/v2"
+	"github.com/gdamore/tcell"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
