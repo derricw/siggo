@@ -6,7 +6,7 @@ import (
 
 	"github.com/derricw/siggo/model"
 	"github.com/gdamore/tcell/v2"
-	"github.com/kyokomi/emoji"
+	"github.com/kyokomi/emoji/v2"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
 )
@@ -97,6 +97,7 @@ func NewSendPanel(parent *ChatWindow, siggo *model.Siggo) *SendPanel {
 	s.SetFieldBackgroundColor(tview.Styles.PrimitiveBackgroundColor)
 	s.SetChangedFunc(s.emojify)
 	s.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		log.Debugf("Key Event <INSERT>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
 		switch event.Key() {
 		case tcell.KeyESC:
 			s.Defocus()

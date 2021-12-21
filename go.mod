@@ -6,7 +6,6 @@ require (
 	github.com/atotto/clipboard v0.1.2
 	github.com/gdamore/tcell/v2 v2.4.1-0.20210905002822-f057f0a857a1
 	github.com/gen2brain/beeep v0.0.0-20200526185328-e9c15c258e28
-	github.com/kyokomi/emoji v2.2.4+incompatible
 	github.com/mdp/qrterminal/v3 v3.0.0
 	github.com/rivo/tview v0.0.0-20211202162923-2a6de950f73b
 	github.com/sirupsen/logrus v1.2.0
@@ -25,6 +24,7 @@ require (
 	github.com/gopherjs/gopherwasm v1.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
+	github.com/kyokomi/emoji/v2 v2.2.8 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect

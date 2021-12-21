@@ -14,7 +14,7 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/derricw/siggo/model"
 	"github.com/gdamore/tcell/v2"
-	"github.com/kyokomi/emoji"
+	"github.com/kyokomi/emoji/v2"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
 )
@@ -51,6 +51,7 @@ type ChatWindow struct {
 	yankKeybinds      func(*tcell.EventKey) *tcell.EventKey
 	openKeybinds      func(*tcell.EventKey) *tcell.EventKey
 	linkKeybinds      func(*tcell.EventKey) *tcell.EventKey
+	insertKeybinds    func(*tcell.EventKey) *tcell.EventKey
 	goKeybinds        func(*tcell.EventKey) *tcell.EventKey
 }
 
@@ -60,6 +61,7 @@ func (c *ChatWindow) InsertMode() {
 	c.app.SetFocus(c.sendPanel)
 	c.sendPanel.SetBorderColor(tcell.ColorOrange)
 	c.mode = InsertMode
+	c.SetInputCapture(c.insertKeybinds)
 }
 
 // YankMode enters yank mode
@@ -111,6 +113,7 @@ func (c *ChatWindow) NormalMode() {
 // any widget is done hiding the conversation panel
 func (c *ChatWindow) ShowConversation() {
 	c.Grid.AddItem(c.conversationPanel, 0, 1, 1, 1, 0, 0, false)
+	c.NormalMode()
 }
 
 // HideConversation temporarily replaces the conversation panel with another widget
@@ -197,6 +200,7 @@ func (c *ChatWindow) ShowAttachInput() {
 	c.SetRows(0, 3, 1)
 	c.AddItem(p, 2, 0, 1, 2, 0, 0, false)
 	c.app.SetFocus(p)
+	c.SetInputCapture(nil)
 }
 
 // ShowFilterInput opens a commandPanel to filter the conversation
@@ -208,6 +212,7 @@ func (c *ChatWindow) ShowFilterInput() {
 	c.SetRows(0, 3, 1)
 	c.AddItem(p, 2, 0, 1, 2, 0, 0, false)
 	c.app.SetFocus(p)
+	c.SetInputCapture(nil)
 }
 
 // HideCommandInput hides any current CommandInput panel
@@ -221,6 +226,7 @@ func (c *ChatWindow) HideCommandInput() {
 	c.SetRows(0, 3)
 	c.update()
 	c.FocusMe()
+	c.NormalMode()
 }
 
 // ShowStatusBar shows the bottom status bar
@@ -605,6 +611,42 @@ func NewChatWindow(siggo *model.Siggo, app *tview.Application) *ChatWindow {
 				w.YankLastLink()
 				return nil
 			}
+		case tcell.KeyCtrlQ:
+			w.Quit()
+		case tcell.KeyESC:
+			w.NormalMode()
+			return nil
+		}
+		return event
+	}
+	w.insertKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
+		log.Debugf("Key Event <INSERT>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyRune:
+		case tcell.KeyCtrlQ:
+			w.Quit()
+		case tcell.KeyESC:
+			w.NormalMode()
+			return nil
+		}
+		return event
+	}
+	w.openKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
+		log.Debugf("Key Event <OPEN>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyRune:
+		case tcell.KeyCtrlQ:
+			w.Quit()
+		case tcell.KeyESC:
+			w.NormalMode()
+			return nil
+		}
+		return event
+	}
+	w.linkKeybinds = func(event *tcell.EventKey) *tcell.EventKey {
+		log.Debugf("Key Event <LINK>: %v mods: %v rune: %v", event.Key(), event.Modifiers(), event.Rune())
+		switch event.Key() {
+		case tcell.KeyRune:
 		case tcell.KeyCtrlQ:
 			w.Quit()
 		case tcell.KeyESC:
