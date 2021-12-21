@@ -13,7 +13,7 @@ import (
 
 	"github.com/atotto/clipboard"
 	"github.com/derricw/siggo/model"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/kyokomi/emoji"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
@@ -352,7 +352,7 @@ func (c *ChatWindow) Compose() {
 	})
 	// need to sleep because there seems to be a race condition in tview
 	// https://github.com/rivo/tview/issues/244
-	time.Sleep(100 * time.Millisecond)
+	//time.Sleep(100 * time.Millisecond)
 	if !success {
 		c.SetErrorStatus(fmt.Errorf("failed to suspend siggo"))
 		return
@@ -382,7 +382,7 @@ func (c *ChatWindow) FancyAttach() {
 	success := c.app.Suspend(func() {
 		path, err = FZFFile()
 	})
-	time.Sleep(100 * time.Millisecond)
+	//time.Sleep(100 * time.Millisecond)
 	if !success {
 		c.SetErrorStatus(fmt.Errorf("failed to suspend siggo"))
 		return
@@ -419,7 +419,7 @@ func (c *ChatWindow) FuzzyGoTo() {
 	success := c.app.Suspend(func() {
 		contactName, err = FZFList(contactList)
 	})
-	time.Sleep(100 * time.Millisecond)
+	//time.Sleep(100 * time.Millisecond)
 	if !success {
 		c.SetErrorStatus(fmt.Errorf("failed to suspend siggo"))
 		return

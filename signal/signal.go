@@ -435,7 +435,16 @@ func (s *Signal) GetRecipientStore() (*SignalRecipientStore, error) {
 	if err = json.Unmarshal(b, store); err != nil {
 		return nil, err
 	}
-	return store, nil
+
+	// sometimes there are contacts with no number...
+	// idk why but lets filter those out
+	filtered := &SignalRecipientStore{}
+	for _, recipient := range store.Recipients {
+		if recipient.Number != "" {
+			filtered.Recipients = append(filtered.Recipients, recipient)
+		}
+	}
+	return filtered, nil
 }
 
 // GetContactList attempts to read an existing contact list from the signal user directory.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/atotto/clipboard"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
