@@ -5,6 +5,10 @@
 
 A terminal ui for signal-cli, written in Go.
 
+## Unable to keep pace with `signal-cli`
+
+I have not been keeping up with `signal-cli` development. They change their interface constantly. If you want your install to work, use signal cli version 0.9.2 until I find time to update.
+
 ![Alt text](media/screenshot.jpg?raw=true "Screenshot")
 
 ### Features
@@ -19,7 +23,7 @@ A terminal ui for signal-cli, written in Go.
 
 ### Dependencies
 
-* [signal-cli](https://github.com/AsamK/signal-cli). (>=0.9.2)
+* [signal-cli](https://github.com/AsamK/signal-cli). (==0.9.2)
 
 siggo uses the dbus daemon feature of signal-cli, so `libunixsocket-java` (Debian), `libmatthew-java` (Fedora) or `libmatthew-unix-java` (AUR) is required. There seems to be a `brew` [forumla](https://formulae.brew.sh/formula/dbus) for dbus on MacOS.
 
