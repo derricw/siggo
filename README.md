@@ -5,11 +5,11 @@
 
 A terminal ui for signal-cli, written in Go.
 
-## Unable to keep pace with `signal-cli`
-
-I have not been keeping up with `signal-cli` development. They change their interface constantly. If you want your install to work, use signal cli version 0.9.2 until I find time to update.
-
 ![Alt text](media/screenshot.jpg?raw=true "Screenshot")
+
+### Unable to keep pace with `signal-cli`
+
+I have not been keeping up with `signal-cli` development. They change the location and format of their local data constantly. If you want your install to work, use signal cli version 0.9.2 until I find time to update.
 
 ### Features
 
